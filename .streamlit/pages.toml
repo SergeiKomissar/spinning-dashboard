@@ -1,0 +1,9 @@
+[[pages]]
+path = "app/dashboard.py"
+name = "Отчёт"
+icon = "📊"
+
+[[pages]]
+path = "app/pages/1_admin_stats.py" 
+name = "Статистика посещений"
+icon = "📈"
