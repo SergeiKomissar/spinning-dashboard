@@ -220,18 +220,42 @@ def main():
                 <span class="icon">🔧</span>Результаты по машинам
             </div>
             <p style="color: {COLORS['text_secondary']}; margin-bottom: 16px; font-size: 13px;">
-                Последние 10 партий. Нажмите на машину для детального просмотра.
+                Последние 5 партий. Нажмите на машину для детального просмотра.
             </p>
         """, unsafe_allow_html=True)
         
-        # Данные за последние 10 партий
+        # Функции для цветовой раскраски
+        def get_strength_color(val):
+            if val < 260:
+                return '#ef4444'  # красный
+            elif val < 270:
+                return '#f97316'  # оранжевый
+            elif val < 280:
+                return '#eab308'  # жёлтый
+            else:
+                return '#22c55e'  # зелёный
+        
+        def get_cv_color(val):
+            if val < 6:
+                return '#22c55e'  # зелёный
+            elif val < 9:
+                return '#f97316'  # оранжевый
+            else:
+                return '#ef4444'  # красный
+        
+        # Данные за последние 10 партий (для детального просмотра)
         last_10_parties_list = sorted(df['№ партии'].dropna().unique())[-10:]
         df_last10 = df[df['№ партии'].isin(last_10_parties_list)]
+        
+        # Данные за последние 5 партий (для превью)
+        last_5_parties_list = sorted(df['№ партии'].dropna().unique())[-5:]
+        df_last5 = df[df['№ партии'].isin(last_5_parties_list)]
+        
         machines = sorted(df_last10['№ ПМ'].dropna().unique())
         
-        # Заголовки
-        header_cols = st.columns([1, 2, 2, 2])
-        headers = ['Машина', '⚡ Разрывная нагрузка', '📊 Коэф. вариации', '📏 Лин. плотность']
+        # Заголовки (без линейной плотности)
+        header_cols = st.columns([1, 3, 3])
+        headers = ['Машина', '⚡ Разрывная нагрузка (последние 5)', '📊 Коэф. вариации (последние 5)']
         for col, header in zip(header_cols, headers):
             with col:
                 st.markdown(f"<div style='text-align:center; font-weight:bold; color:{COLORS['text']}; font-size:13px;'>{header}</div>", unsafe_allow_html=True)
@@ -240,32 +264,32 @@ def main():
         
         # Строки машин
         for machine in machines:
-            machine_data = df_last10[df_last10['№ ПМ'] == machine].sort_values('№ партии')
-            parties = machine_data['№ партии'].values
+            machine_data_full = df_last10[df_last10['№ ПМ'] == machine].sort_values('№ партии')
+            machine_data_5 = df_last5[df_last5['№ ПМ'] == machine].sort_values('№ партии')
+            parties = machine_data_full['№ партии'].values
             
             with st.expander(f"№ {int(machine)}", expanded=False):
-                # Развёрнутый вид с большими графиками
+                # Развёрнутый вид с графиками (только 2 колонки)
                 st.markdown(f"<h4 style='color:{COLORS['text']}'>Машина № {int(machine)} — детальный анализ</h4>", unsafe_allow_html=True)
                 
-                detail_cols = st.columns(3)
+                detail_cols = st.columns(2)
                 
                 # Разрывная нагрузка - детально
                 with detail_cols[0]:
-                    strength_vals = machine_data['Относительная разрывная нагрузка, сН/текс'].values
+                    strength_vals = machine_data_full['Относительная разрывная нагрузка, сН/текс'].values
                     if len(strength_vals) > 0:
                         mean_s = np.mean(strength_vals)
                         fig = go.Figure()
                         party_labels = [int(p) - 714 for p in parties]
-                        threshold = QUALITY_THRESHOLDS['strength_min']
-                        colors = [COLORS['success'] if v >= mean_s else COLORS['danger'] if v < threshold else COLORS['warning'] for v in strength_vals]
+                        colors = [get_strength_color(v) for v in strength_vals]
                         
                         fig.add_trace(go.Scatter(x=party_labels, y=strength_vals, mode='lines+markers+text',
                             line=dict(color=COLORS['text_secondary'], width=2),
                             marker=dict(size=10, color=colors),
                             text=[f"{v:.1f}" for v in strength_vals], textposition='top center',
                             textfont=dict(size=10, color=COLORS['text']), name='Значение'))
-                        fig.add_hline(y=threshold, line=dict(color=COLORS['danger'], width=2, dash='dash'),
-                            annotation_text=f"Мин: {threshold}", annotation_position="right")
+                        fig.add_hline(y=270, line=dict(color=COLORS['danger'], width=2, dash='dash'),
+                            annotation_text="Мин: 270", annotation_position="right")
                         fig.add_hline(y=mean_s, line=dict(color=COLORS['success'], width=2),
                             annotation_text=f"Ср: {mean_s:.1f}", annotation_position="right")
                         fig.update_layout(title='Разрывная нагрузка, сН/текс', height=300,
@@ -278,20 +302,19 @@ def main():
                 
                 # Коэф. вариации - детально
                 with detail_cols[1]:
-                    cv_vals = machine_data['Коэффициент вариации, %'].values
+                    cv_vals = machine_data_full['Коэффициент вариации, %'].values
                     if len(cv_vals) > 0:
                         mean_c = np.mean(cv_vals)
                         fig = go.Figure()
-                        threshold = QUALITY_THRESHOLDS['cv_max']
-                        colors = [COLORS['success'] if v <= mean_c else COLORS['danger'] if v > threshold else COLORS['warning'] for v in cv_vals]
+                        colors = [get_cv_color(v) for v in cv_vals]
                         
                         fig.add_trace(go.Scatter(x=party_labels, y=cv_vals, mode='lines+markers+text',
                             line=dict(color=COLORS['text_secondary'], width=2),
                             marker=dict(size=10, color=colors),
                             text=[f"{v:.1f}" for v in cv_vals], textposition='top center',
                             textfont=dict(size=10, color=COLORS['text']), name='Значение'))
-                        fig.add_hline(y=threshold, line=dict(color=COLORS['danger'], width=2, dash='dash'),
-                            annotation_text=f"Макс: {threshold}", annotation_position="right")
+                        fig.add_hline(y=9, line=dict(color=COLORS['danger'], width=2, dash='dash'),
+                            annotation_text="Макс: 9", annotation_position="right")
                         fig.add_hline(y=mean_c, line=dict(color=COLORS['success'], width=2),
                             annotation_text=f"Ср: {mean_c:.1f}", annotation_position="right")
                         fig.update_layout(title='Коэф. вариации, %', height=300,
@@ -300,56 +323,31 @@ def main():
                             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                             font=dict(color=COLORS['text']), showlegend=False, margin=dict(t=40,b=40,l=40,r=60))
                         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-                
-                # Лин. плотность - детально
-                with detail_cols[2]:
-                    if 'Линейная плотность, текс' in machine_data.columns:
-                        density_vals = machine_data['Линейная плотность, текс'].values
-                        if len(density_vals) > 0:
-                            mean_d = np.mean(density_vals)
-                            fig = go.Figure()
-                            thresh_min, thresh_max = QUALITY_THRESHOLDS['density_range']
-                            colors = [COLORS['success'] if thresh_min <= v <= thresh_max else COLORS['danger'] for v in density_vals]
-                            
-                            fig.add_trace(go.Scatter(x=party_labels, y=density_vals, mode='lines+markers+text',
-                                line=dict(color=COLORS['text_secondary'], width=2),
-                                marker=dict(size=10, color=colors),
-                                text=[f"{v:.2f}" for v in density_vals], textposition='top center',
-                                textfont=dict(size=10, color=COLORS['text']), name='Значение'))
-                            fig.add_hline(y=thresh_min, line=dict(color=COLORS['danger'], width=2, dash='dash'))
-                            fig.add_hline(y=thresh_max, line=dict(color=COLORS['danger'], width=2, dash='dash'),
-                                annotation_text=f"Норма: {thresh_min}-{thresh_max}", annotation_position="right")
-                            fig.add_hline(y=mean_d, line=dict(color=COLORS['success'], width=2),
-                                annotation_text=f"Ср: {mean_d:.2f}", annotation_position="right")
-                            fig.update_layout(title='Лин. плотность, текс', height=300,
-                                xaxis=dict(title='Партия', tickfont=dict(color=COLORS['text_secondary'])),
-                                yaxis=dict(range=[min(min(density_vals)-0.5, 27.5), max(max(density_vals)+0.5, 30)],
-                                    tickfont=dict(color=COLORS['text_secondary'])),
-                                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                                font=dict(color=COLORS['text']), showlegend=False, margin=dict(t=40,b=40,l=40,r=60))
-                            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
             
-            # Компактная строка с мини-графиками (когда expander свёрнут - показывается это)
-            if not st.session_state.get(f'exp_{int(machine)}', False):
-                cols = st.columns([1, 2, 2, 2])
-                with cols[0]:
-                    pass  # Номер уже в expander
-                with cols[1]:
-                    strength_vals = machine_data['Относительная разрывная нагрузка, сН/текс'].values
-                    if len(strength_vals) > 0:
-                        fig = create_sparkline(strength_vals, parties, 'strength', 45)
-                        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-                with cols[2]:
-                    cv_vals = machine_data['Коэффициент вариации, %'].values
-                    if len(cv_vals) > 0:
-                        fig = create_sparkline(cv_vals, parties, 'cv', 45)
-                        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-                with cols[3]:
-                    if 'Линейная плотность, текс' in machine_data.columns:
-                        density_vals = machine_data['Линейная плотность, текс'].values
-                        if len(density_vals) > 0:
-                            fig = create_sparkline(density_vals, parties, 'density', 45)
-                            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+            # Компактная строка с цветными цифрами
+            cols = st.columns([1, 3, 3])
+            with cols[0]:
+                pass  # Номер уже в expander
+            
+            # Разрывная нагрузка - цветные цифры
+            with cols[1]:
+                strength_vals = machine_data_5['Относительная разрывная нагрузка, сН/текс'].values[-5:]
+                if len(strength_vals) > 0:
+                    html_parts = []
+                    for v in strength_vals:
+                        color = get_strength_color(v)
+                        html_parts.append(f"<span style='color:{color}; font-weight:bold; font-size:14px; margin:0 4px;'>{v:.0f}</span>")
+                    st.markdown(f"<div style='text-align:center; padding:8px 0;'>{''.join(html_parts)}</div>", unsafe_allow_html=True)
+            
+            # Коэф. вариации - цветные цифры
+            with cols[2]:
+                cv_vals = machine_data_5['Коэффициент вариации, %'].values[-5:]
+                if len(cv_vals) > 0:
+                    html_parts = []
+                    for v in cv_vals:
+                        color = get_cv_color(v)
+                        html_parts.append(f"<span style='color:{color}; font-weight:bold; font-size:14px; margin:0 4px;'>{v:.1f}</span>")
+                    st.markdown(f"<div style='text-align:center; padding:8px 0;'>{''.join(html_parts)}</div>", unsafe_allow_html=True)
         
         # Футер
         st.markdown(f"""
