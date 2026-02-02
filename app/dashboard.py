@@ -3,7 +3,6 @@ import plotly.graph_objects as go
 import numpy as np
 import sys
 import os
-import time
 
 # Конфигурация страницы - должна быть первой командой Streamlit
 st.set_page_config(
@@ -14,7 +13,7 @@ st.set_page_config(
 )
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from components.charts import create_gauge_chart, create_trend_chart, create_heatmap, create_problem_machines_chart, create_quality_scatter, create_sparkline, create_mini_indicator
+from components.charts import create_gauge_chart, create_trend_chart, create_heatmap, create_problem_machines_chart, create_quality_scatter, create_sparkline, create_plastification_comparison
 from components.metrics import calculate_party_metrics, get_status_indicator, get_quality_score
 from components.layout import render_page_header, render_party_header, render_metrics_section
 from utils.data_processing import load_data
@@ -37,36 +36,20 @@ def main():
     with col_logout:
         logout_button()
     
-    # Ссылка на статистику для админа (в сайдбаре)
+    # Ссылка на статистику для админа
     if is_admin():
         st.sidebar.markdown("### 📊 Навигация")
-        st.sidebar.page_link("dashboard.py", label="📋 Отчёт")
+        st.sidebar.page_link("dashboard.py", label="📋 Отчёт", icon="📋")
         st.sidebar.markdown("### 🔧 Админ-панель")
         st.sidebar.page_link("pages/1_admin_stats.py", label="📈 Статистика посещений")
 
     
-    # Загружаем данные с прогресс-баром
-    if 'df' not in st.session_state or st.session_state.df is None:
-        # Показываем заглушку пока грузятся данные
-        loading_placeholder = st.empty()
-        with loading_placeholder.container():
-            st.markdown("""
-                <div style="text-align:center; padding: 60px 20px;">
-                    <h2 style="color: #F1F5F9;">🔄 Загрузка дашборда...</h2>
-                    <p style="color: #94A3B8;">Подключение к Google Sheets</p>
-                </div>
-            """, unsafe_allow_html=True)
-            progress_bar = st.progress(0)
-
-            progress_bar.progress(10, text="📡 Подключение...")
+    # Загружаем данные
+    with st.spinner('Загрузка данных...'):
+        if 'df' not in st.session_state:
             st.session_state.df = load_data()
-            progress_bar.progress(100, text="✅ Готово!")
-            time.sleep(0.2)
-
-        loading_placeholder.empty()
-
-    df = st.session_state.df
-
+        df = st.session_state.df
+    
     if df is None:
         st.error("❌ Не удалось загрузить данные. Проверьте подключение к Google Sheets.")
         return
@@ -75,19 +58,15 @@ def main():
     col_refresh, col_space = st.columns([1, 5])
     with col_refresh:
         if st.button('🔄 Обновить данные', key="refresh_button"):
-            progress_bar = st.progress(0, text="🔄 Очистка кэша...")
-            load_data.clear()
-            progress_bar.progress(30, text="📊 Загрузка новых данных...")
-            new_data = load_data()
-            if new_data is not None:
-                progress_bar.progress(90, text="✅ Обработка...")
-                st.session_state.df = new_data
-                progress_bar.progress(100, text="✅ Данные обновлены!")
-                time.sleep(0.5)
-                st.rerun()
-            else:
-                progress_bar.empty()
-                st.error('❌ Ошибка обновления')
+            with st.spinner('Обновление...'):
+                load_data.clear()
+                new_data = load_data()
+                if new_data is not None:
+                    st.session_state.df = new_data
+                    st.success('✅ Данные обновлены!')
+                    st.rerun()
+                else:
+                    st.error('❌ Ошибка обновления')
 
     try:
         if df.empty:
@@ -195,113 +174,100 @@ def main():
         
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # --- ГРАФИК 2: Карта качества (в сворачиваемом блоке для скорости) ---
-        with st.expander("🗺️ Карта качества партии", expanded=False):
-            st.markdown(f"""
-                <p style="color:{COLORS['text_secondary']}; font-size:13px; margin-bottom:12px;">
-                Каждая точка — машина. По X — разрывная нагрузка (↑ лучше),
+        # --- ГРАФИК 2: Карта качества ---
+        st.markdown(f"""
+            <div class="info-block">
+                <h4>🗺️ Карта качества партии</h4>
+                <p>Каждая точка — машина. По X — разрывная нагрузка (↑ лучше), 
                 по Y — коэф. вариации (↓ лучше). Зелёная зона — норма.</p>
-            """, unsafe_allow_html=True)
-
-            # Выбор партии
-            all_parties = sorted(df['№ партии'].dropna().unique(), reverse=True)
-            display_parties = [f"Партия {int(p) - 714}" for p in all_parties[:20]]
-
-            selected_idx = st.selectbox(
-                "Выберите партию для анализа:",
-                range(len(display_parties)),
-                format_func=lambda x: display_parties[x],
-                key="party_selector"
-            )
-            selected_party = all_parties[selected_idx]
-
-            scatter_chart = create_quality_scatter(df, selected_party)
-            st.plotly_chart(scatter_chart, use_container_width=True, config={'displayModeBar': False})
+            </div>
+        """, unsafe_allow_html=True)
         
+        # Выбор партии
+        all_parties = sorted(df['№ партии'].dropna().unique(), reverse=True)
+        display_parties = [f"Партия {int(p) - 714}" for p in all_parties[:20]]
+        
+        selected_idx = st.selectbox(
+            "Выберите партию для анализа:",
+            range(len(display_parties)),
+            format_func=lambda x: display_parties[x],
+            key="party_selector"
+        )
+        selected_party = all_parties[selected_idx]
+        
+        scatter_chart = create_quality_scatter(df, selected_party)
+        st.plotly_chart(scatter_chart, use_container_width=True, config={'displayModeBar': False})
+
         st.markdown("<br>", unsafe_allow_html=True)
-        
+
+        # --- ГРАФИК 3: Сравнение пластификационной вытяжки ---
+        st.markdown(f"""
+            <div class="info-block">
+                <h4>🔬 Влияние пластификационной вытяжки на прочность</h4>
+                <p>Сравнение разрывной нагрузки между машинами с вытяжкой 60% и 65%.
+                Box plot показывает медиану, квартили и выбросы.</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+        plastification_chart, plastification_stats = create_plastification_comparison(df, last_n_parties=10)
+        st.plotly_chart(plastification_chart, use_container_width=True, config={'displayModeBar': False})
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
         # === РЕЗУЛЬТАТЫ ПО МАШИНАМ ===
         st.markdown(f"""
             <div class="section-header">
                 <span class="icon">🔧</span>Результаты по машинам
             </div>
             <p style="color: {COLORS['text_secondary']}; margin-bottom: 16px; font-size: 13px;">
-                Среднее значение за последние 5 партий. Нажмите на машину для детального просмотра.
+                Последние 10 партий. Нажмите на машину для детального просмотра.
             </p>
         """, unsafe_allow_html=True)
-
-        # Данные за последние 5 партий
-        last_5_parties_list = sorted(df['№ партии'].dropna().unique())[-5:]
-        df_last5 = df[df['№ партии'].isin(last_5_parties_list)]
-        machines = sorted(df_last5['№ ПМ'].dropna().unique())
-
-        # Пагинация - показываем по 10 машин
-        MACHINES_PER_PAGE = 10
-        total_machines = len(machines)
-
-        # Инициализация состояния пагинации
-        if 'machines_page' not in st.session_state:
-            st.session_state.machines_page = 1
-
-        total_pages = (total_machines + MACHINES_PER_PAGE - 1) // MACHINES_PER_PAGE
-        current_page = st.session_state.machines_page
-
-        # Вычисляем диапазон машин для текущей страницы
-        start_idx = (current_page - 1) * MACHINES_PER_PAGE
-        end_idx = min(start_idx + MACHINES_PER_PAGE, total_machines)
-        machines_to_show = machines[start_idx:end_idx]
-
-        # Заголовки (без линейной плотности)
-        header_cols = st.columns([1, 3, 3])
-        headers = ['№', '⚡ Разрывная нагрузка (ср. за 5 партий)', '📊 Коэф. вариации (ср. за 5 партий)']
+        
+        # Данные за последние 10 партий
+        last_10_parties_list = sorted(df['№ партии'].dropna().unique())[-10:]
+        df_last10 = df[df['№ партии'].isin(last_10_parties_list)]
+        machines = sorted(df_last10['№ ПМ'].dropna().unique())
+        
+        # Заголовки
+        header_cols = st.columns([1, 2, 2, 2])
+        headers = ['Машина', '⚡ Разрывная нагрузка', '📊 Коэф. вариации', '📏 Лин. плотность']
         for col, header in zip(header_cols, headers):
             with col:
                 st.markdown(f"<div style='text-align:center; font-weight:bold; color:{COLORS['text']}; font-size:13px;'>{header}</div>", unsafe_allow_html=True)
-
-        # Легенда
-        st.markdown(f"""
-            <div style="text-align:center; color:{COLORS['text_secondary']}; font-size:11px; margin-bottom:10px;">
-                🟢 отлично | 🟠 норма | 🔴 требует внимания &nbsp;&nbsp;|&nbsp;&nbsp; ↑ улучшение | ↓ ухудшение | → стабильно
-            </div>
-        """, unsafe_allow_html=True)
-
-        # Информация о пагинации
-        st.markdown(f"""
-            <div style="text-align:center; color:{COLORS['text']}; font-size:12px; margin-bottom:10px;">
-                Показано {start_idx + 1}–{end_idx} из {total_machines} машин (стр. {current_page}/{total_pages})
-            </div>
-        """, unsafe_allow_html=True)
-
+        
         st.markdown("<hr style='margin: 5px 0; border-color: #334155'>", unsafe_allow_html=True)
-
-        # Строки машин (только для текущей страницы)
-        for machine in machines_to_show:
-            machine_data = df_last5[df_last5['№ ПМ'] == machine].sort_values('№ партии')
+        
+        # Строки машин
+        for machine in machines:
+            machine_data = df_last10[df_last10['№ ПМ'] == machine].sort_values('№ партии')
             parties = machine_data['№ партии'].values
-
+            
             with st.expander(f"№ {int(machine)}", expanded=False):
-                # Развёрнутый вид с графиками за 5 партий
-                st.markdown(f"<h4 style='color:{COLORS['text']}'>Машина № {int(machine)} — последние 5 партий</h4>", unsafe_allow_html=True)
-
-                detail_cols = st.columns(2)
-                party_labels = [int(p) - 714 for p in parties]
-
+                # Развёрнутый вид с большими графиками
+                st.markdown(f"<h4 style='color:{COLORS['text']}'>Машина № {int(machine)} — детальный анализ</h4>", unsafe_allow_html=True)
+                
+                detail_cols = st.columns(3)
+                
                 # Разрывная нагрузка - детально
                 with detail_cols[0]:
                     strength_vals = machine_data['Относительная разрывная нагрузка, сН/текс'].values
                     if len(strength_vals) > 0:
+                        mean_s = np.mean(strength_vals)
                         fig = go.Figure()
-                        colors = [COLORS['success'] if v >= 280 else COLORS['warning'] if v >= 270 else COLORS['danger'] for v in strength_vals]
-
+                        party_labels = [int(p) - 714 for p in parties]
+                        threshold = QUALITY_THRESHOLDS['strength_min']
+                        colors = [COLORS['success'] if v >= mean_s else COLORS['danger'] if v < threshold else COLORS['warning'] for v in strength_vals]
+                        
                         fig.add_trace(go.Scatter(x=party_labels, y=strength_vals, mode='lines+markers+text',
                             line=dict(color=COLORS['text_secondary'], width=2),
-                            marker=dict(size=12, color=colors),
+                            marker=dict(size=10, color=colors),
                             text=[f"{v:.1f}" for v in strength_vals], textposition='top center',
                             textfont=dict(size=10, color=COLORS['text']), name='Значение'))
-                        fig.add_hline(y=270, line=dict(color=COLORS['danger'], width=2, dash='dash'),
-                            annotation_text="270 (мин)", annotation_position="right")
-                        fig.add_hline(y=280, line=dict(color=COLORS['success'], width=2, dash='dash'),
-                            annotation_text="280 (отл)", annotation_position="right")
+                        fig.add_hline(y=threshold, line=dict(color=COLORS['danger'], width=2, dash='dash'),
+                            annotation_text=f"Мин: {threshold}", annotation_position="right")
+                        fig.add_hline(y=mean_s, line=dict(color=COLORS['success'], width=2),
+                            annotation_text=f"Ср: {mean_s:.1f}", annotation_position="right")
                         fig.update_layout(title='Разрывная нагрузка, сН/текс', height=300,
                             xaxis=dict(title='Партия', tickfont=dict(color=COLORS['text_secondary'])),
                             yaxis=dict(range=[min(min(strength_vals)-10, 250), max(max(strength_vals)+15, 300)],
@@ -309,68 +275,82 @@ def main():
                             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                             font=dict(color=COLORS['text']), showlegend=False, margin=dict(t=40,b=40,l=40,r=60))
                         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-
+                
                 # Коэф. вариации - детально
                 with detail_cols[1]:
                     cv_vals = machine_data['Коэффициент вариации, %'].values
                     if len(cv_vals) > 0:
+                        mean_c = np.mean(cv_vals)
                         fig = go.Figure()
-                        colors = [COLORS['success'] if v < 6.5 else COLORS['warning'] if v <= 9 else COLORS['danger'] for v in cv_vals]
-
+                        threshold = QUALITY_THRESHOLDS['cv_max']
+                        colors = [COLORS['success'] if v <= mean_c else COLORS['danger'] if v > threshold else COLORS['warning'] for v in cv_vals]
+                        
                         fig.add_trace(go.Scatter(x=party_labels, y=cv_vals, mode='lines+markers+text',
                             line=dict(color=COLORS['text_secondary'], width=2),
-                            marker=dict(size=12, color=colors),
+                            marker=dict(size=10, color=colors),
                             text=[f"{v:.1f}" for v in cv_vals], textposition='top center',
                             textfont=dict(size=10, color=COLORS['text']), name='Значение'))
-                        fig.add_hline(y=6.5, line=dict(color=COLORS['success'], width=2, dash='dash'),
-                            annotation_text="6.5 (отл)", annotation_position="right")
-                        fig.add_hline(y=9, line=dict(color=COLORS['danger'], width=2, dash='dash'),
-                            annotation_text="9 (макс)", annotation_position="right")
+                        fig.add_hline(y=threshold, line=dict(color=COLORS['danger'], width=2, dash='dash'),
+                            annotation_text=f"Макс: {threshold}", annotation_position="right")
+                        fig.add_hline(y=mean_c, line=dict(color=COLORS['success'], width=2),
+                            annotation_text=f"Ср: {mean_c:.1f}", annotation_position="right")
                         fig.update_layout(title='Коэф. вариации, %', height=300,
                             xaxis=dict(title='Партия', tickfont=dict(color=COLORS['text_secondary'])),
                             yaxis=dict(range=[0, max(max(cv_vals)+3, 12)], tickfont=dict(color=COLORS['text_secondary'])),
                             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                             font=dict(color=COLORS['text']), showlegend=False, margin=dict(t=40,b=40,l=40,r=60))
                         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-
-            # Компактная строка с индикаторами
-            cols = st.columns([1, 3, 3])
-            with cols[0]:
-                pass  # Номер уже в expander
-            with cols[1]:
-                strength_vals = machine_data['Относительная разрывная нагрузка, сН/текс'].values
-                if len(strength_vals) > 0:
-                    st.markdown(f"<div style='text-align:center; font-size:16px; padding:5px;'>{create_mini_indicator(strength_vals, 'strength')}</div>", unsafe_allow_html=True)
-            with cols[2]:
-                cv_vals = machine_data['Коэффициент вариации, %'].values
-                if len(cv_vals) > 0:
-                    st.markdown(f"<div style='text-align:center; font-size:16px; padding:5px;'>{create_mini_indicator(cv_vals, 'cv')}</div>", unsafe_allow_html=True)
-
-        # Кнопки пагинации
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        if total_pages > 1:
-            col_prev, col_info, col_next = st.columns([1, 2, 1])
-
-            with col_prev:
-                if current_page > 1:
-                    if st.button("◀ Предыдущие 10", key="prev_machines"):
-                        st.session_state.machines_page -= 1
-                        st.rerun()
-
-            with col_info:
-                st.markdown(f"""
-                    <div style="text-align:center; color:{COLORS['text']}; padding-top:8px;">
-                        Страница {current_page} из {total_pages}
-                    </div>
-                """, unsafe_allow_html=True)
-
-            with col_next:
-                if current_page < total_pages:
-                    if st.button("Следующие 10 ▶", key="next_machines"):
-                        st.session_state.machines_page += 1
-                        st.rerun()
-
+                
+                # Лин. плотность - детально
+                with detail_cols[2]:
+                    if 'Линейная плотность, текс' in machine_data.columns:
+                        density_vals = machine_data['Линейная плотность, текс'].values
+                        if len(density_vals) > 0:
+                            mean_d = np.mean(density_vals)
+                            fig = go.Figure()
+                            thresh_min, thresh_max = QUALITY_THRESHOLDS['density_range']
+                            colors = [COLORS['success'] if thresh_min <= v <= thresh_max else COLORS['danger'] for v in density_vals]
+                            
+                            fig.add_trace(go.Scatter(x=party_labels, y=density_vals, mode='lines+markers+text',
+                                line=dict(color=COLORS['text_secondary'], width=2),
+                                marker=dict(size=10, color=colors),
+                                text=[f"{v:.2f}" for v in density_vals], textposition='top center',
+                                textfont=dict(size=10, color=COLORS['text']), name='Значение'))
+                            fig.add_hline(y=thresh_min, line=dict(color=COLORS['danger'], width=2, dash='dash'))
+                            fig.add_hline(y=thresh_max, line=dict(color=COLORS['danger'], width=2, dash='dash'),
+                                annotation_text=f"Норма: {thresh_min}-{thresh_max}", annotation_position="right")
+                            fig.add_hline(y=mean_d, line=dict(color=COLORS['success'], width=2),
+                                annotation_text=f"Ср: {mean_d:.2f}", annotation_position="right")
+                            fig.update_layout(title='Лин. плотность, текс', height=300,
+                                xaxis=dict(title='Партия', tickfont=dict(color=COLORS['text_secondary'])),
+                                yaxis=dict(range=[min(min(density_vals)-0.5, 27.5), max(max(density_vals)+0.5, 30)],
+                                    tickfont=dict(color=COLORS['text_secondary'])),
+                                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                                font=dict(color=COLORS['text']), showlegend=False, margin=dict(t=40,b=40,l=40,r=60))
+                            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+            
+            # Компактная строка с мини-графиками (когда expander свёрнут - показывается это)
+            if not st.session_state.get(f'exp_{int(machine)}', False):
+                cols = st.columns([1, 2, 2, 2])
+                with cols[0]:
+                    pass  # Номер уже в expander
+                with cols[1]:
+                    strength_vals = machine_data['Относительная разрывная нагрузка, сН/текс'].values
+                    if len(strength_vals) > 0:
+                        fig = create_sparkline(strength_vals, parties, 'strength', 45)
+                        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+                with cols[2]:
+                    cv_vals = machine_data['Коэффициент вариации, %'].values
+                    if len(cv_vals) > 0:
+                        fig = create_sparkline(cv_vals, parties, 'cv', 45)
+                        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+                with cols[3]:
+                    if 'Линейная плотность, текс' in machine_data.columns:
+                        density_vals = machine_data['Линейная плотность, текс'].values
+                        if len(density_vals) > 0:
+                            fig = create_sparkline(density_vals, parties, 'density', 45)
+                            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        
         # Футер
         st.markdown(f"""
             <div style="text-align: center; margin-top: 40px; padding: 20px; color: {COLORS['text_secondary']};">
