@@ -3,16 +3,5 @@ __pycache__/
 .venv/
 venv/
 .DS_Store
-
-# Секреты - НЕ загружать на GitHub!
 credentials.json
 app/credentials.json
-config/users.yaml
-PASSWORDS.txt
-data/visits.db
-
-# Локальные файлы
-*.plist
-*.code-workspace
-run.bat
-run.command

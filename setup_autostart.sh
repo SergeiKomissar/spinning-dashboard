@@ -1,7 +1,7 @@
 #!/bin/bash
 # Настройка автозапуска дашборда при включении Mac
 
-DASHBOARD_DIR="$HOME/DashboardPVV/Dashboard"
+DASHBOARD_DIR="$HOME/Dashboard"
 PLIST_NAME="com.spinning.dashboard.plist"
 
 echo "🔧 Настройка автозапуска..."
