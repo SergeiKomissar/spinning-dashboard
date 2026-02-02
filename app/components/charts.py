@@ -499,149 +499,6 @@ def create_quality_scatter(df, party_number=None):
 
 
 
-def create_plastification_comparison(df, last_n_parties=10):
-    """Сравнение прочности между машинами с разной пластификационной вытяжкой (60% vs 65%)"""
-
-    # Колонка с вытяжкой
-    stretch_col = 'Пласт. вытяжка, %'
-
-    if stretch_col not in df.columns:
-        fig = go.Figure()
-        fig.add_annotation(x=0.5, y=0.5, text="Колонка 'Пласт. вытяжка, %' не найдена",
-            font=dict(size=16, color=COLORS['warning']), showarrow=False, xref="paper", yref="paper")
-        fig.update_layout(height=450, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-        return fig, None
-
-    # Фильтруем последние N партий
-    recent_parties = sorted(df['№ партии'].dropna().unique())[-last_n_parties:]
-    recent_data = df[df['№ партии'].isin(recent_parties)].copy()
-
-    # Преобразуем вытяжку в числовой формат и группируем
-    recent_data[stretch_col] = pd.to_numeric(recent_data[stretch_col], errors='coerce')
-
-    # Данные для 60% и 65%
-    data_60 = recent_data[recent_data[stretch_col] == 60]['Относительная разрывная нагрузка, сН/текс'].dropna()
-    data_65 = recent_data[recent_data[stretch_col] == 65]['Относительная разрывная нагрузка, сН/текс'].dropna()
-
-    if len(data_60) == 0 and len(data_65) == 0:
-        fig = go.Figure()
-        fig.add_annotation(x=0.5, y=0.5, text="Нет данных для сравнения",
-            font=dict(size=16, color=COLORS['warning']), showarrow=False, xref="paper", yref="paper")
-        fig.update_layout(height=450, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-        return fig, None
-
-    # Статистика
-    stats = {}
-    if len(data_60) > 0:
-        stats['60%'] = {
-            'mean': data_60.mean(),
-            'std': data_60.std(),
-            'median': data_60.median(),
-            'count': len(data_60),
-            'min': data_60.min(),
-            'max': data_60.max()
-        }
-    if len(data_65) > 0:
-        stats['65%'] = {
-            'mean': data_65.mean(),
-            'std': data_65.std(),
-            'median': data_65.median(),
-            'count': len(data_65),
-            'min': data_65.min(),
-            'max': data_65.max()
-        }
-
-    fig = go.Figure()
-
-    # Box plot для 60%
-    if len(data_60) > 0:
-        fig.add_trace(go.Box(
-            y=data_60,
-            name='Вытяжка 60%',
-            boxpoints='all',
-            jitter=0.3,
-            pointpos=-1.5,
-            marker=dict(color=COLORS['primary'], size=6, opacity=0.6),
-            line=dict(color=COLORS['primary'], width=2),
-            fillcolor='rgba(0, 212, 255, 0.3)',
-            hovertemplate="<b>60%</b><br>Нагрузка: %{y:.1f} сН/текс<extra></extra>"
-        ))
-
-    # Box plot для 65%
-    if len(data_65) > 0:
-        fig.add_trace(go.Box(
-            y=data_65,
-            name='Вытяжка 65%',
-            boxpoints='all',
-            jitter=0.3,
-            pointpos=-1.5,
-            marker=dict(color=COLORS['secondary'], size=6, opacity=0.6),
-            line=dict(color=COLORS['secondary'], width=2),
-            fillcolor='rgba(139, 92, 246, 0.3)',
-            hovertemplate="<b>65%</b><br>Нагрузка: %{y:.1f} сН/текс<extra></extra>"
-        ))
-
-    # Пороговая линия минимальной прочности
-    fig.add_hline(
-        y=QUALITY_THRESHOLDS['strength_min'],
-        line=dict(color=COLORS['danger'], dash='dash', width=2),
-        annotation_text=f"Мин: {QUALITY_THRESHOLDS['strength_min']}",
-        annotation_position="right",
-        annotation_font=dict(color=COLORS['danger'], size=11)
-    )
-
-    # Формируем текст аннотации со статистикой
-    annotation_lines = []
-    if '60%' in stats:
-        s = stats['60%']
-        annotation_lines.append(f"<b>60%:</b> μ={s['mean']:.1f} ± {s['std']:.1f} (n={s['count']})")
-    if '65%' in stats:
-        s = stats['65%']
-        annotation_lines.append(f"<b>65%:</b> μ={s['mean']:.1f} ± {s['std']:.1f} (n={s['count']})")
-
-    # Разница средних
-    if '60%' in stats and '65%' in stats:
-        diff = stats['65%']['mean'] - stats['60%']['mean']
-        diff_sign = '+' if diff > 0 else ''
-        diff_color = COLORS['success'] if diff > 0 else COLORS['danger']
-        annotation_lines.append(f"<b>Δ = {diff_sign}{diff:.1f}</b>")
-
-    fig.update_layout(
-        title=dict(
-            text='<b>Прочность: вытяжка 60% vs 65%</b>',
-            font=dict(size=16, color=COLORS['text'], family=CHART_CONFIG['font_family']),
-            x=0.5, xanchor='center'
-        ),
-        yaxis=dict(
-            title='Разрывная нагрузка, сН/текс',
-            title_font=dict(size=11, color=COLORS['text_secondary']),
-            tickfont=dict(color=COLORS['text_secondary'], size=10),
-            gridcolor=COLORS['grid'],
-            showgrid=True,
-            zeroline=False
-        ),
-        xaxis=dict(
-            tickfont=dict(color=COLORS['text'], size=12),
-        ),
-        height=480,
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        margin=dict(t=60, b=40, l=60, r=30),
-        showlegend=False,
-        annotations=[
-            dict(
-                x=0.02, y=0.98, xref='paper', yref='paper', showarrow=False,
-                text='<br>'.join(annotation_lines),
-                font=dict(size=12, color=COLORS['text']),
-                bgcolor=COLORS['card'], borderpad=8,
-                align='left', xanchor='left', yanchor='top'
-            )
-        ]
-    )
-
-    return fig, stats
-
-
 def create_sparkline(values, parties, metric_type='strength', height=50):
     """Компактный мини-график без подписей"""
     
@@ -699,3 +556,60 @@ def create_sparkline(values, parties, metric_type='strength', height=50):
     )
     
     return fig
+
+
+def create_plastification_comparison(df, last_n_parties=10):
+    """Сравнение прочности - Bar Chart"""
+    stretch_col = 'Пласт. вытяжка, %'
+
+    if stretch_col not in df.columns:
+        fig = go.Figure()
+        fig.add_annotation(x=0.5, y=0.5, text="Колонка не найдена", font=dict(size=16, color=COLORS['warning']), showarrow=False, xref="paper", yref="paper")
+        fig.update_layout(height=400, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        return fig, None
+
+    recent_parties = sorted(df['№ партии'].dropna().unique())[-last_n_parties:]
+    recent_data = df[df['№ партии'].isin(recent_parties)].copy()
+    recent_data[stretch_col] = pd.to_numeric(recent_data[stretch_col], errors='coerce')
+
+    data_60 = recent_data[recent_data[stretch_col] == 60]['Относительная разрывная нагрузка, сН/текс'].dropna()
+    data_65 = recent_data[recent_data[stretch_col] == 65]['Относительная разрывная нагрузка, сН/текс'].dropna()
+
+    if len(data_60) == 0 and len(data_65) == 0:
+        fig = go.Figure()
+        fig.add_annotation(x=0.5, y=0.5, text="Нет данных", font=dict(size=16, color=COLORS['warning']), showarrow=False, xref="paper", yref="paper")
+        fig.update_layout(height=400, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        return fig, None
+
+    categories, means, stds, colors, counts = [], [], [], [], []
+    stats = {}
+
+    if len(data_60) > 0:
+        stats['60%'] = {'mean': data_60.mean(), 'std': data_60.std(), 'count': len(data_60)}
+        categories.append('Вытяжка 60%')
+        means.append(data_60.mean())
+        stds.append(data_60.std())
+        colors.append(COLORS['primary'])
+        counts.append(len(data_60))
+
+    if len(data_65) > 0:
+        stats['65%'] = {'mean': data_65.mean(), 'std': data_65.std(), 'count': len(data_65)}
+        categories.append('Вытяжка 65%')
+        means.append(data_65.mean())
+        stds.append(data_65.std())
+        colors.append(COLORS['secondary'])
+        counts.append(len(data_65))
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=categories, y=means, error_y=dict(type='data', array=stds, visible=True, color=COLORS['text_secondary'], thickness=2), marker_color=colors, text=[f"{m:.1f}±{s:.1f}<br>(n={c})" for m,s,c in zip(means,stds,counts)], textposition='outside', textfont=dict(size=14, color=COLORS['text'])))
+
+    fig.add_hline(y=QUALITY_THRESHOLDS['strength_min'], line=dict(color=COLORS['danger'], dash='dash', width=2), annotation_text=f"Мин: {QUALITY_THRESHOLDS['strength_min']}", annotation_position="right", annotation_font=dict(color=COLORS['danger'], size=12))
+
+    diff_text = ""
+    if '60%' in stats and '65%' in stats:
+        diff = stats['65%']['mean'] - stats['60%']['mean']
+        diff_text = f"Разница: {'+' if diff > 0 else ''}{diff:.1f} сН/текс"
+
+    fig.update_layout(title=dict(text=f'<b>Прочность: вытяжка 60% vs 65%</b><br><span style="font-size:13px;color:#94a3b8">{diff_text}</span>', font=dict(size=18, color=COLORS['text']), x=0.5), yaxis=dict(title='Разрывная нагрузка, сН/текс', gridcolor=COLORS['grid'], range=[250, max(means)+max(stds)+15]), xaxis=dict(tickfont=dict(size=14, color=COLORS['text'])), height=420, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', bargap=0.4, showlegend=False)
+
+    return fig, stats
