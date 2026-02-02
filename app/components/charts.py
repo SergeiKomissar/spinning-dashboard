@@ -216,19 +216,22 @@ def create_trend_chart(last_10_parties):
         hoverinfo='skip'
     ))
     
-    # Основная линия с точками
+    # Основная линия с точками и значениями
     fig.add_trace(go.Scatter(
         x=x_display,
         y=y_values,
         name='Разрывная нагрузка',
         line=dict(color=COLORS['primary'], width=3, shape='spline'),
-        mode='lines+markers',
+        mode='lines+markers+text',
         marker=dict(
             size=12,
             color=COLORS['primary'],
             line=dict(color=COLORS['background'], width=2),
             symbol='circle'
         ),
+        text=[f"{v:.1f}" for v in y_values],
+        textposition='top center',
+        textfont=dict(size=11, color=COLORS['text']),
         hovertemplate="Партия %{x}<br>Нагрузка: %{y:.1f} сН/текс<extra></extra>"
     ))
     
