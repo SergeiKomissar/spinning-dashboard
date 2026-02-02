@@ -1,0 +1,23 @@
+credentials:
+  usernames:
+    sergeikomissarov:
+      name: Сергей Комиссаров
+      password: '291977'
+      role: admin
+    ivangoloti:
+      name: Иван Голоти
+      password: '847362'
+      role: user
+    sergeipivovarov:
+      name: Сергей Пивоваров
+      password: '529164'
+      role: user
+    alexanderzlobin:
+      name: Александр Злобин
+      password: '673918'
+      role: user
+
+cookie:
+  expiry_days: 30
+  key: spinning_dashboard_secret_key_2024
+  name: spinning_dashboard_auth
