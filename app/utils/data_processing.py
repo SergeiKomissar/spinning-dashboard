@@ -1,5 +1,4 @@
 import os
-import json
 import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -9,56 +8,40 @@ import time
 
 from utils.constants import DEFAULT_SHEET_ID
 
-
-def get_google_credentials():
-    """Получение Google credentials (поддержка Streamlit Cloud и локального запуска)"""
-    scope = ['https://spreadsheets.google.com/feeds',
-             'https://www.googleapis.com/auth/drive']
-
-    # 1. Сначала пробуем Streamlit Cloud secrets
-    try:
-        if hasattr(st, 'secrets') and 'gcp_service_account' in st.secrets:
-            credentials_dict = dict(st.secrets['gcp_service_account'])
-            return ServiceAccountCredentials.from_json_keyfile_dict(credentials_dict, scope)
-    except Exception:
-        pass
-
-    # 2. Пробуем переменную окружения
-    credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-    if credentials_path and os.path.exists(credentials_path):
-        return ServiceAccountCredentials.from_json_keyfile_name(credentials_path, scope)
-
-    # 3. Пробуем локальные файлы
-    local_path = os.path.join(os.path.dirname(__file__), '..', 'credentials.json')
-    root_path = os.path.join(os.path.dirname(__file__), '..', '..', 'credentials.json')
-
-    if os.path.exists(local_path):
-        return ServiceAccountCredentials.from_json_keyfile_name(local_path, scope)
-    elif os.path.exists(root_path):
-        return ServiceAccountCredentials.from_json_keyfile_name(root_path, scope)
-
-    return None
-
-
-@st.cache_data(ttl=1800, show_spinner=False)
+@st.cache_data(ttl=300, show_spinner=False)
 def load_data():
-    """Загрузка данных из Google Sheets (кэш 30 мин)"""
+    """Загрузка данных из Google Sheets"""
     max_retries = 3
     retry_delay = 2
 
-    credentials = get_google_credentials()
-    if not credentials:
-        st.error("Не найдены учётные данные Google. Проверьте credentials.json или secrets.")
-        return None
+    credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+    if not credentials_path:
+        local_path = os.path.join(os.path.dirname(__file__), '..', 'credentials.json')
+        root_path = os.path.join(os.path.dirname(__file__), '..', '..', 'credentials.json')
+        if os.path.exists(local_path):
+            credentials_path = local_path
+        elif os.path.exists(root_path):
+            credentials_path = root_path
+        else:
+            st.error("Не найден файл credentials.json")
+            return None
 
     sheet_id = os.getenv('GOOGLE_SHEET_ID', DEFAULT_SHEET_ID)
-
+    
     for attempt in range(max_retries):
         try:
+            # Настройка доступа к Google Sheets
+            scope = ['https://spreadsheets.google.com/feeds',
+                    'https://www.googleapis.com/auth/drive']
+            
+            credentials = ServiceAccountCredentials.from_json_keyfile_name(
+                credentials_path,
+                scope
+            )
             
             # Увеличиваем таймаут подключения
             socket.setdefaulttimeout(20)
-
+            
             client = gspread.authorize(credentials)
             sheet = client.open_by_key(sheet_id).sheet1
             

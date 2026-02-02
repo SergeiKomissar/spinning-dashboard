@@ -7,10 +7,6 @@ from utils.constants import COLORS
 
 def inject_custom_css():
     """Внедрение кастомных CSS стилей для корпоративной тёмной темы"""
-    # Кэшируем CSS в session_state чтобы не генерировать каждый раз
-    if 'css_injected' not in st.session_state:
-        st.session_state.css_injected = True
-
     st.markdown(f"""
         <style>
         /* === ОСНОВНОЙ ФОН === */

@@ -12,15 +12,7 @@ DB_PATH = Path(__file__).parent.parent.parent / 'data' / 'visits.db'
 
 
 def load_users():
-    """Загрузка пользователей из YAML или Streamlit secrets"""
-    # 1. Сначала пробуем Streamlit Cloud secrets
-    try:
-        if hasattr(st, 'secrets') and 'users' in st.secrets:
-            return dict(st.secrets['users'])
-    except Exception:
-        pass
-
-    # 2. Пробуем локальный файл
+    """Загрузка пользователей из YAML"""
     if CONFIG_PATH.exists():
         with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
             return yaml.safe_load(f)
@@ -126,33 +118,12 @@ def log_logout(visit_id):
     conn.close()
 
 
-def cleanup_stale_sessions():
-    """Закрытие зависших сессий — оставляем только последнюю на пользователя"""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    # Закрываем ВСЕ сессии кроме самой последней для каждого пользователя
-    cursor.execute('''
-        UPDATE visits
-        SET logout_time = login_time, duration_minutes = 0
-        WHERE logout_time IS NULL
-        AND id NOT IN (
-            SELECT MAX(id) FROM visits WHERE logout_time IS NULL GROUP BY username
-        )
-    ''')
-
-    conn.commit()
-    conn.close()
-
-
 def get_visit_stats():
     """Получение статистики посещений"""
     init_db()
-    cleanup_stale_sessions()  # Автоочистка зависших сессий
-
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-
+    
     # Все посещения
     cursor.execute('''
         SELECT username, name, login_time, logout_time, duration_minutes
@@ -161,10 +132,10 @@ def get_visit_stats():
         LIMIT 100
     ''')
     visits = cursor.fetchall()
-
+    
     # Статистика по пользователям
     cursor.execute('''
-        SELECT username, name,
+        SELECT username, name, 
                COUNT(*) as visit_count,
                SUM(duration_minutes) as total_minutes,
                MAX(login_time) as last_visit
@@ -173,19 +144,18 @@ def get_visit_stats():
         ORDER BY visit_count DESC
     ''')
     user_stats = cursor.fetchall()
-
-    # Активные сессии — только последняя сессия каждого пользователя за 15 мин
+    
+    # Активные сессии (без logout)
     cursor.execute('''
-        SELECT username, name, MAX(login_time) as login_time
+        SELECT username, name, login_time
         FROM visits
         WHERE logout_time IS NULL
-        AND login_time > datetime('now', '-15 minutes')
-        GROUP BY username
+        AND login_time > datetime('now', '-24 hours')
     ''')
     active_sessions = cursor.fetchall()
-
+    
     conn.close()
-
+    
     return {
         'visits': visits,
         'user_stats': user_stats,
