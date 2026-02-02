@@ -13,7 +13,7 @@ st.set_page_config(
 )
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from components.charts import create_gauge_chart, create_trend_chart, create_heatmap, create_problem_machines_chart, create_quality_scatter, create_sparkline, create_plastification_comparison
+from components.charts import create_gauge_chart, create_trend_chart, create_heatmap, create_problem_machines_chart, create_quality_scatter, create_sparkline, create_plastification_comparison, create_cv_plastification_comparison
 from components.metrics import calculate_party_metrics, get_status_indicator, get_quality_score
 from components.layout import render_page_header, render_party_header, render_metrics_section
 from utils.data_processing import load_data
@@ -211,6 +211,20 @@ def main():
 
         plastification_chart, plastification_stats = create_plastification_comparison(df, last_n_parties=10)
         st.plotly_chart(plastification_chart, use_container_width=True, config={'displayModeBar': False})
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # --- ГРАФИК 4: CV по пластификационной вытяжке ---
+        st.markdown(f"""
+            <div class="info-block">
+                <h4>📊 Влияние пластификационной вытяжки на коэф. вариации</h4>
+                <p>Сравнение CV между машинами с вытяжкой 60% и 65%.
+                Чем ниже CV - тем стабильнее качество.</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+        cv_plastification_chart, cv_plastification_stats = create_cv_plastification_comparison(df, last_n_parties=10)
+        st.plotly_chart(cv_plastification_chart, use_container_width=True, config={'displayModeBar': False})
 
         st.markdown("<br>", unsafe_allow_html=True)
 

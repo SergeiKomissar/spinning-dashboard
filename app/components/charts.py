@@ -652,3 +652,100 @@ def create_plastification_comparison(df, last_n_parties=10):
     )
 
     return fig, stats
+
+
+def create_cv_plastification_comparison(df, last_n_parties=10):
+    """Сравнение CV - Strip plot с точками и линией среднего"""
+    stretch_col = 'Пласт. вытяжка, %'
+
+    if stretch_col not in df.columns:
+        fig = go.Figure()
+        fig.add_annotation(x=0.5, y=0.5, text="Колонка не найдена", font=dict(size=16, color=COLORS['warning']), showarrow=False, xref="paper", yref="paper")
+        fig.update_layout(height=400, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        return fig, None
+
+    recent_parties = sorted(df['№ партии'].dropna().unique())[-last_n_parties:]
+    recent_data = df[df['№ партии'].isin(recent_parties)].copy()
+    recent_data[stretch_col] = pd.to_numeric(recent_data[stretch_col], errors='coerce')
+
+    data_60 = recent_data[recent_data[stretch_col] == 60]['Коэффициент вариации, %'].dropna()
+    data_65 = recent_data[recent_data[stretch_col] == 65]['Коэффициент вариации, %'].dropna()
+
+    if len(data_60) == 0 and len(data_65) == 0:
+        fig = go.Figure()
+        fig.add_annotation(x=0.5, y=0.5, text="Нет данных", font=dict(size=16, color=COLORS['warning']), showarrow=False, xref="paper", yref="paper")
+        fig.update_layout(height=400, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        return fig, None
+
+    stats = {}
+    fig = go.Figure()
+
+    # Точки для 60%
+    if len(data_60) > 0:
+        stats['60%'] = {'mean': data_60.mean(), 'std': data_60.std(), 'count': len(data_60)}
+        jitter_60 = np.random.uniform(-0.15, 0.15, len(data_60))
+        fig.add_trace(go.Scatter(
+            x=jitter_60,
+            y=data_60.values,
+            mode='markers',
+            name='60%',
+            marker=dict(color=COLORS['primary'], size=8, opacity=0.6, line=dict(width=1, color='white')),
+            hovertemplate="60%%<br>CV: %{y:.1f}%<extra></extra>"
+        ))
+        # Линия среднего для 60%
+        fig.add_shape(type="line", x0=-0.3, x1=0.3, y0=data_60.mean(), y1=data_60.mean(),
+            line=dict(color=COLORS['primary'], width=3))
+        fig.add_annotation(x=0, y=data_60.mean(), text=f"<b>{data_60.mean():.1f}</b>",
+            showarrow=False, yshift=-15, font=dict(size=14, color=COLORS['primary']))
+
+    # Точки для 65%
+    if len(data_65) > 0:
+        stats['65%'] = {'mean': data_65.mean(), 'std': data_65.std(), 'count': len(data_65)}
+        jitter_65 = np.random.uniform(0.85, 1.15, len(data_65))
+        fig.add_trace(go.Scatter(
+            x=jitter_65,
+            y=data_65.values,
+            mode='markers',
+            name='65%',
+            marker=dict(color=COLORS['secondary'], size=8, opacity=0.6, line=dict(width=1, color='white')),
+            hovertemplate="65%%<br>CV: %{y:.1f}%<extra></extra>"
+        ))
+        # Линия среднего для 65%
+        fig.add_shape(type="line", x0=0.7, x1=1.3, y0=data_65.mean(), y1=data_65.mean(),
+            line=dict(color=COLORS['secondary'], width=3))
+        fig.add_annotation(x=1, y=data_65.mean(), text=f"<b>{data_65.mean():.1f}</b>",
+            showarrow=False, yshift=-15, font=dict(size=14, color=COLORS['secondary']))
+
+    # Пороговая линия (максимальный допустимый CV)
+    fig.add_hline(y=QUALITY_THRESHOLDS['cv_max'], line=dict(color=COLORS['danger'], dash='dash', width=2),
+        annotation_text=f"Макс: {QUALITY_THRESHOLDS['cv_max']}", annotation_position="right",
+        annotation_font=dict(color=COLORS['danger'], size=11))
+
+    # Разница
+    diff_text = ""
+    if '60%' in stats and '65%' in stats:
+        diff = stats['65%']['mean'] - stats['60%']['mean']
+        diff_text = f"Разница: {'+' if diff > 0 else ''}{diff:.2f}%"
+
+    fig.update_layout(
+        title=dict(text=f'<b>Коэф. вариации: вытяжка 60% vs 65%</b><br><span style="font-size:12px;color:#94a3b8">{diff_text}</span>',
+            font=dict(size=16, color=COLORS['text']), x=0.5),
+        xaxis=dict(
+            tickmode='array', tickvals=[0, 1], ticktext=['Вытяжка 60%', 'Вытяжка 65%'],
+            tickfont=dict(size=13, color=COLORS['text']), range=[-0.5, 1.5], showgrid=False
+        ),
+        yaxis=dict(title='Коэф. вариации, %', gridcolor=COLORS['grid'],
+            title_font=dict(size=11, color=COLORS['text_secondary']),
+            tickfont=dict(color=COLORS['text_secondary']),
+            range=[0, max(data_60.max() if len(data_60) > 0 else 10, data_65.max() if len(data_65) > 0 else 10) + 2]),
+        height=420,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        showlegend=False,
+        annotations=[
+            dict(x=0, y=-0.12, xref='paper', yref='paper', text=f"n={stats.get('60%', {}).get('count', 0)}", showarrow=False, font=dict(size=11, color=COLORS['text_secondary'])),
+            dict(x=1, y=-0.12, xref='paper', yref='paper', text=f"n={stats.get('65%', {}).get('count', 0)}", showarrow=False, font=dict(size=11, color=COLORS['text_secondary']))
+        ] if stats else []
+    )
+
+    return fig, stats
