@@ -13,7 +13,7 @@ st.set_page_config(
 )
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from components.charts import create_gauge_chart, create_trend_chart, create_heatmap, create_problem_machines_chart, create_quality_scatter, create_sparkline, create_plastification_comparison, create_cv_plastification_comparison
+from components.charts import create_gauge_chart, create_trend_chart, create_heatmap, create_problem_machines_chart, create_quality_scatter, create_sparkline
 from components.metrics import calculate_party_metrics, get_status_indicator, get_quality_score
 from components.layout import render_page_header, render_party_header, render_metrics_section
 from utils.data_processing import load_data
@@ -200,31 +200,115 @@ def main():
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # --- ГРАФИК 3: Сравнение пластификационной вытяжки ---
+        # --- ТАБЛИЦА: Сравнение пластификационной вытяжки ---
         st.markdown(f"""
             <div class="info-block">
-                <h4>🔬 Влияние пластификационной вытяжки на прочность</h4>
-                <p>Сравнение разрывной нагрузки между машинами с вытяжкой 60% и 65%.
-                Box plot показывает медиану, квартили и выбросы.</p>
+                <h4>🔬 Сравнение: вытяжка 60% vs 65%</h4>
+                <p>Средние показатели прочности и CV для машин с разной пластификационной вытяжкой.</p>
             </div>
         """, unsafe_allow_html=True)
-
-        plastification_chart, plastification_stats = create_plastification_comparison(df, last_n_parties=10)
-        st.plotly_chart(plastification_chart, use_container_width=True, config={'displayModeBar': False})
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # --- ГРАФИК 4: CV по пластификационной вытяжке ---
-        st.markdown(f"""
-            <div class="info-block">
-                <h4>📊 Влияние пластификационной вытяжки на коэф. вариации</h4>
-                <p>Сравнение CV между машинами с вытяжкой 60% и 65%.
-                Чем ниже CV - тем стабильнее качество.</p>
-            </div>
-        """, unsafe_allow_html=True)
-
-        cv_plastification_chart, cv_plastification_stats = create_cv_plastification_comparison(df, last_n_parties=10)
-        st.plotly_chart(cv_plastification_chart, use_container_width=True, config={'displayModeBar': False})
+        
+        stretch_col = 'Пласт. вытяжка, %'
+        
+        if stretch_col in df.columns:
+            # Функция для расчёта статистики
+            def calc_stats(data, stretch_val):
+                filtered = data[pd.to_numeric(data[stretch_col], errors='coerce') == stretch_val]
+                if len(filtered) == 0:
+                    return {'strength': '-', 'cv': '-', 'count': 0}
+                return {
+                    'strength': f"{filtered['Относительная разрывная нагрузка, сН/текс'].mean():.1f}",
+                    'cv': f"{filtered['Коэффициент вариации, %'].mean():.1f}",
+                    'count': len(filtered)
+                }
+            
+            # Получаем партии
+            all_parties = sorted(df['№ партии'].dropna().unique())
+            last_1 = df[df['№ партии'] == all_parties[-1]] if len(all_parties) >= 1 else pd.DataFrame()
+            last_3 = df[df['№ партии'].isin(all_parties[-3:])] if len(all_parties) >= 3 else pd.DataFrame()
+            last_10 = df[df['№ партии'].isin(all_parties[-10:])] if len(all_parties) >= 10 else pd.DataFrame()
+            
+            # Статистика
+            stats_1_60 = calc_stats(last_1, 60)
+            stats_1_65 = calc_stats(last_1, 65)
+            stats_3_60 = calc_stats(last_3, 60)
+            stats_3_65 = calc_stats(last_3, 65)
+            stats_10_60 = calc_stats(last_10, 60)
+            stats_10_65 = calc_stats(last_10, 65)
+            
+            # Функция для цвета разницы
+            def diff_color(val60, val65, metric='strength'):
+                try:
+                    v60 = float(val60)
+                    v65 = float(val65)
+                    diff = v65 - v60
+                    if metric == 'strength':
+                        color = '#22c55e' if diff > 0 else '#ef4444' if diff < 0 else '#94a3b8'
+                    else:  # CV - меньше лучше
+                        color = '#22c55e' if diff < 0 else '#ef4444' if diff > 0 else '#94a3b8'
+                    sign = '+' if diff > 0 else ''
+                    return f"<span style='color:{color};font-weight:bold'>{sign}{diff:.1f}</span>"
+                except:
+                    return '-'
+            
+            # HTML таблица
+            table_html = f"""
+            <style>
+                .compare-table {{ width: 100%; border-collapse: collapse; margin: 10px 0; }}
+                .compare-table th, .compare-table td {{ padding: 12px 8px; text-align: center; border-bottom: 1px solid #334155; }}
+                .compare-table th {{ background: #1e293b; color: #e2e8f0; font-weight: bold; }}
+                .compare-table td {{ color: #cbd5e1; }}
+                .compare-table tr:hover {{ background: #1e293b; }}
+                .val-60 {{ color: #00d4ff !important; font-weight: bold; }}
+                .val-65 {{ color: #8b5cf6 !important; font-weight: bold; }}
+                .header-row {{ background: #0f172a !important; }}
+            </style>
+            <table class="compare-table">
+                <tr class="header-row">
+                    <th rowspan="2">Период</th>
+                    <th colspan="3">Разрывная нагрузка, сН/текс</th>
+                    <th colspan="3">Коэф. вариации, %</th>
+                </tr>
+                <tr class="header-row">
+                    <th><span class="val-60">60%</span></th>
+                    <th><span class="val-65">65%</span></th>
+                    <th>Δ</th>
+                    <th><span class="val-60">60%</span></th>
+                    <th><span class="val-65">65%</span></th>
+                    <th>Δ</th>
+                </tr>
+                <tr>
+                    <td><b>Последняя партия</b><br><small>(n: {stats_1_60['count']} / {stats_1_65['count']})</small></td>
+                    <td class="val-60">{stats_1_60['strength']}</td>
+                    <td class="val-65">{stats_1_65['strength']}</td>
+                    <td>{diff_color(stats_1_60['strength'], stats_1_65['strength'], 'strength')}</td>
+                    <td class="val-60">{stats_1_60['cv']}</td>
+                    <td class="val-65">{stats_1_65['cv']}</td>
+                    <td>{diff_color(stats_1_60['cv'], stats_1_65['cv'], 'cv')}</td>
+                </tr>
+                <tr>
+                    <td><b>3 последние партии</b><br><small>(n: {stats_3_60['count']} / {stats_3_65['count']})</small></td>
+                    <td class="val-60">{stats_3_60['strength']}</td>
+                    <td class="val-65">{stats_3_65['strength']}</td>
+                    <td>{diff_color(stats_3_60['strength'], stats_3_65['strength'], 'strength')}</td>
+                    <td class="val-60">{stats_3_60['cv']}</td>
+                    <td class="val-65">{stats_3_65['cv']}</td>
+                    <td>{diff_color(stats_3_60['cv'], stats_3_65['cv'], 'cv')}</td>
+                </tr>
+                <tr>
+                    <td><b>10 последних партий</b><br><small>(n: {stats_10_60['count']} / {stats_10_65['count']})</small></td>
+                    <td class="val-60">{stats_10_60['strength']}</td>
+                    <td class="val-65">{stats_10_65['strength']}</td>
+                    <td>{diff_color(stats_10_60['strength'], stats_10_65['strength'], 'strength')}</td>
+                    <td class="val-60">{stats_10_60['cv']}</td>
+                    <td class="val-65">{stats_10_65['cv']}</td>
+                    <td>{diff_color(stats_10_60['cv'], stats_10_65['cv'], 'cv')}</td>
+                </tr>
+            </table>
+            """
+            st.markdown(table_html, unsafe_allow_html=True)
+        else:
+            st.warning("Колонка 'Пласт. вытяжка, %' не найдена в данных")
 
         st.markdown("<br>", unsafe_allow_html=True)
 
