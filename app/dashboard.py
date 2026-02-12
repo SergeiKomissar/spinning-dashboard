@@ -357,12 +357,12 @@ def main():
             machines_188 = len(last_party_speed[last_party_speed[speed_col] == 188]['№ ПМ'].unique())
             
             # Статистика по скоростям
-            speed_stats_1_164 = calc_speed_stats(last_1, 16.4)
-            speed_stats_1_188 = calc_speed_stats(last_1, 18.8)
-            speed_stats_3_164 = calc_speed_stats(last_3, 16.4)
-            speed_stats_3_188 = calc_speed_stats(last_3, 18.8)
-            speed_stats_10_164 = calc_speed_stats(last_10, 16.4)
-            speed_stats_10_188 = calc_speed_stats(last_10, 18.8)
+            speed_stats_1_164 = calc_speed_stats(last_1, 164)
+            speed_stats_1_188 = calc_speed_stats(last_1, 188)
+            speed_stats_3_164 = calc_speed_stats(last_3, 164)
+            speed_stats_3_188 = calc_speed_stats(last_3, 188)
+            speed_stats_10_164 = calc_speed_stats(last_10, 164)
+            speed_stats_10_188 = calc_speed_stats(last_10, 188)
             
             # Функция для цвета разницы (такая же)
             def speed_diff_color(val164, val188, metric='strength'):
