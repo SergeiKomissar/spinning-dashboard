@@ -453,10 +453,101 @@ def main():
                 break
         
         if vitki_col is not None:
-            # Конвертируем в числа и показываем уникальные значения
+            # Конвертируем в числа
             df[vitki_col] = pd.to_numeric(df[vitki_col], errors='coerce')
-            unique_vitki = sorted(df[vitki_col].dropna().unique())
-            st.caption(f"🔍 Уникальные значения витков: {unique_vitki[:10]}")
+            
+            # Функция для расчёта статистики по виткам
+            def calc_vitki_stats(data, vitki_val):
+                filtered = data[data[vitki_col] == vitki_val]
+                if len(filtered) == 0:
+                    return {'strength': '-', 'cv': '-', 'count': 0}
+                return {
+                    'strength': f"{filtered['Относительная разрывная нагрузка, сН/текс'].mean():.1f}",
+                    'cv': f"{filtered['Коэффициент вариации, %'].mean():.1f}",
+                    'count': len(filtered)
+                }
+            
+            # Считаем количество машин на каждом значении витков (в последней партии)
+            last_party_vitki = df[df['№ партии'] == all_parties[-1]]
+            machines_15 = len(last_party_vitki[last_party_vitki[vitki_col] == 15]['№ ПМ'].unique())
+            machines_16 = len(last_party_vitki[last_party_vitki[vitki_col] == 16]['№ ПМ'].unique())
+            
+            # Статистика по виткам
+            vitki_stats_1_15 = calc_vitki_stats(last_1, 15)
+            vitki_stats_1_16 = calc_vitki_stats(last_1, 16)
+            vitki_stats_3_15 = calc_vitki_stats(last_3, 15)
+            vitki_stats_3_16 = calc_vitki_stats(last_3, 16)
+            vitki_stats_10_15 = calc_vitki_stats(last_10, 15)
+            vitki_stats_10_16 = calc_vitki_stats(last_10, 16)
+            
+            # Функция для цвета разницы
+            def vitki_diff_color(val15, val16, metric='strength'):
+                try:
+                    v15 = float(val15)
+                    v16 = float(val16)
+                    diff = v16 - v15
+                    if metric == 'strength':
+                        color = '#22c55e' if diff > 0 else '#ef4444' if diff < 0 else '#94a3b8'
+                    else:
+                        color = '#22c55e' if diff < 0 else '#ef4444' if diff > 0 else '#94a3b8'
+                    sign = '+' if diff > 0 else ''
+                    return f"<span style='color:{color};font-weight:bold'>{sign}{diff:.1f}</span>"
+                except:
+                    return '-'
+            
+            # HTML таблица
+            vitki_table_html = f"""
+            <table class="compare-table">
+                <tr class="header-row">
+                    <th rowspan="2">Период</th>
+                    <th colspan="3">Разрывная нагрузка, сН/текс</th>
+                    <th colspan="3">Коэф. вариации, %</th>
+                </tr>
+                <tr class="header-row">
+                    <th><span style="color:#10b981;font-weight:bold">15</span></th>
+                    <th><span style="color:#f472b6;font-weight:bold">16</span></th>
+                    <th>Δ</th>
+                    <th><span style="color:#10b981;font-weight:bold">15</span></th>
+                    <th><span style="color:#f472b6;font-weight:bold">16</span></th>
+                    <th>Δ</th>
+                </tr>
+                <tr style="background:#1e293b;">
+                    <td colspan="7" style="text-align:left;padding:8px 12px;">
+                        <b>Машин с витками:</b> 
+                        <span style="color:#10b981;font-weight:bold">15 шт. — {machines_15} маш.</span> | 
+                        <span style="color:#f472b6;font-weight:bold">16 шт. — {machines_16} маш.</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td><b>Последняя партия</b><br><small>(n: {vitki_stats_1_15['count']} / {vitki_stats_1_16['count']})</small></td>
+                    <td style="color:#10b981;font-weight:bold">{vitki_stats_1_15['strength']}</td>
+                    <td style="color:#f472b6;font-weight:bold">{vitki_stats_1_16['strength']}</td>
+                    <td>{vitki_diff_color(vitki_stats_1_15['strength'], vitki_stats_1_16['strength'], 'strength')}</td>
+                    <td style="color:#10b981;font-weight:bold">{vitki_stats_1_15['cv']}</td>
+                    <td style="color:#f472b6;font-weight:bold">{vitki_stats_1_16['cv']}</td>
+                    <td>{vitki_diff_color(vitki_stats_1_15['cv'], vitki_stats_1_16['cv'], 'cv')}</td>
+                </tr>
+                <tr>
+                    <td><b>3 последние партии</b><br><small>(n: {vitki_stats_3_15['count']} / {vitki_stats_3_16['count']})</small></td>
+                    <td style="color:#10b981;font-weight:bold">{vitki_stats_3_15['strength']}</td>
+                    <td style="color:#f472b6;font-weight:bold">{vitki_stats_3_16['strength']}</td>
+                    <td>{vitki_diff_color(vitki_stats_3_15['strength'], vitki_stats_3_16['strength'], 'strength')}</td>
+                    <td style="color:#10b981;font-weight:bold">{vitki_stats_3_15['cv']}</td>
+                    <td style="color:#f472b6;font-weight:bold">{vitki_stats_3_16['cv']}</td>
+                    <td>{vitki_diff_color(vitki_stats_3_15['cv'], vitki_stats_3_16['cv'], 'cv')}</td>
+                </tr>
+                <tr>
+                    <td><b>10 последних партий</b><br><small>(n: {vitki_stats_10_15['count']} / {vitki_stats_10_16['count']})</small></td>
+                    <td style="color:#10b981;font-weight:bold">{vitki_stats_10_15['strength']}</td>
+                    <td style="color:#f472b6;font-weight:bold">{vitki_stats_10_16['strength']}</td>
+                    <td>{vitki_diff_color(vitki_stats_10_15['strength'], vitki_stats_10_16['strength'], 'strength')}</td>
+                    <td style="color:#10b981;font-weight:bold">{vitki_stats_10_15['cv']}</td>
+                    <td style="color:#f472b6;font-weight:bold">{vitki_stats_10_16['cv']}</td>
+                    <td>{vitki_diff_color(vitki_stats_10_15['cv'], vitki_stats_10_16['cv'], 'cv')}</td>
+                </tr>
+            </table>
+            """
+            st.markdown(vitki_table_html, unsafe_allow_html=True)
         else:
             st.warning("Колонка витков не найдена")
 
