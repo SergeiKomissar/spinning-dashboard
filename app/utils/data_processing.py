@@ -94,6 +94,8 @@ def load_data():
                              'Относительная разрывная нагрузка, сН/текс']
             for col in numeric_columns:
                 if col in df.columns:
+                    # Заменяем запятые на точки перед конвертацией
+                    df[col] = df[col].astype(str).str.replace(',', '.', regex=False)
                     df[col] = pd.to_numeric(df[col], errors='coerce')
             
             if 'Линейная плотность, текс' in df.columns:

@@ -336,14 +336,9 @@ def main():
         
         if speed_col in df.columns:
 
-            # Конвертируем запятые в точки для скорости
-            df[speed_col] = df[speed_col].astype(str).str.replace(',', '.').astype(float, errors='ignore')
-            
             # Функция для расчёта статистики по скорости
             def calc_speed_stats(data, speed_val):
-                data_copy = data.copy()
-                data_copy[speed_col] = pd.to_numeric(data_copy[speed_col].astype(str).str.replace(',', '.'), errors='coerce')
-                filtered = data_copy[data_copy[speed_col] == speed_val]
+                filtered = data[data[speed_col] == speed_val]
                 if len(filtered) == 0:
                     return {'strength': '-', 'cv': '-', 'count': 0}
                 return {
@@ -353,8 +348,7 @@ def main():
                 }
             
             # Считаем количество машин на каждой скорости (в последней партии)
-            last_party_speed = df[df['№ партии'] == all_parties[-1]].copy()
-            last_party_speed[speed_col] = pd.to_numeric(last_party_speed[speed_col].astype(str).str.replace(',', '.'), errors='coerce')
+            last_party_speed = df[df['№ партии'] == all_parties[-1]]
             machines_164 = len(last_party_speed[last_party_speed[speed_col] == 16.4]['№ ПМ'].unique())
             machines_188 = len(last_party_speed[last_party_speed[speed_col] == 18.8]['№ ПМ'].unique())
             
