@@ -332,6 +332,9 @@ def main():
             </div>
         """, unsafe_allow_html=True)
         
+        # Debug всех колонок
+        st.write("Колонки:", list(df.columns))
+        
         speed_col = 'Скорость формования, м/мин'
         
         if speed_col in df.columns:
