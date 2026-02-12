@@ -340,11 +340,6 @@ def main():
                 break
         
         if speed_col is not None:
-            # Debug: показать уникальные значения скорости
-            st.write(f"Колонка: {speed_col}")
-            st.write(f"Тип данных: {df[speed_col].dtype}")
-            st.write(f"Уникальные значения: {sorted(df[speed_col].dropna().unique())[:10]}")
-
             # Функция для расчёта статистики по скорости
             def calc_speed_stats(data, speed_val):
                 filtered = data[data[speed_col] == speed_val]
@@ -358,8 +353,8 @@ def main():
             
             # Считаем количество машин на каждой скорости (в последней партии)
             last_party_speed = df[df['№ партии'] == all_parties[-1]]
-            machines_164 = len(last_party_speed[last_party_speed[speed_col] == 16.4]['№ ПМ'].unique())
-            machines_188 = len(last_party_speed[last_party_speed[speed_col] == 18.8]['№ ПМ'].unique())
+            machines_164 = len(last_party_speed[last_party_speed[speed_col] == 164]['№ ПМ'].unique())
+            machines_188 = len(last_party_speed[last_party_speed[speed_col] == 188]['№ ПМ'].unique())
             
             # Статистика по скоростям
             speed_stats_1_164 = calc_speed_stats(last_1, 16.4)
