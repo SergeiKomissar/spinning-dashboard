@@ -332,12 +332,14 @@ def main():
             </div>
         """, unsafe_allow_html=True)
         
-        # Debug всех колонок
-        st.write("Колонки:", list(df.columns))
+        # Ищем колонку скорости динамически
+        speed_col = None
+        for col in df.columns:
+            if 'Скорость' in col and 'формования' in col:
+                speed_col = col
+                break
         
-        speed_col = 'Скорость формования, м/мин'
-        
-        if speed_col in df.columns:
+        if speed_col is not None:
 
             # Функция для расчёта статистики по скорости
             def calc_speed_stats(data, speed_val):

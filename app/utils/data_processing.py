@@ -90,8 +90,17 @@ def load_data():
                 st.warning(f"Доступные колонки в таблице: {', '.join(df.columns.tolist())}")
                 return None
             
-            numeric_columns = ['№ партии', '№ ПМ', 'Скорость формования, м/мин', 
-                             'Относительная разрывная нагрузка, сН/текс']
+            # Находим колонку скорости
+            speed_col = None
+            for c in df.columns:
+                if 'Скорость' in c and 'формования' in c:
+                    speed_col = c
+                    break
+            
+            numeric_columns = ['№ партии', '№ ПМ', 'Относительная разрывная нагрузка, сН/текс']
+            if speed_col:
+                numeric_columns.append(speed_col)
+            
             for col in numeric_columns:
                 if col in df.columns:
                     # Заменяем запятые на точки перед конвертацией
