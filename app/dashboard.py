@@ -437,6 +437,30 @@ def main():
 
         st.markdown("<br>", unsafe_allow_html=True)
 
+        # --- ТАБЛИЦА: Сравнение по виткам на сушильном цилиндре ---
+        st.markdown(f"""
+            <div class="info-block">
+                <h4>🔄 Сравнение: витки на сушильном цилиндре</h4>
+                <p>Средние показатели прочности и CV для машин с разным количеством витков.</p>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # Ищем колонку витков
+        vitki_col = None
+        for col in df.columns:
+            if 'витк' in col.lower() and 'цилиндр' in col.lower():
+                vitki_col = col
+                break
+        
+        if vitki_col is not None:
+            # Показать уникальные значения для определения групп
+            unique_vitki = sorted(df[vitki_col].dropna().unique())
+            st.caption(f"🔍 Уникальные значения витков: {unique_vitki[:10]}")
+        else:
+            st.warning("Колонка витков не найдена")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
         # === РЕЗУЛЬТАТЫ ПО МАШИНАМ ===
         st.markdown(f"""
             <div class="section-header">
