@@ -340,6 +340,10 @@ def main():
                 break
         
         if speed_col is not None:
+            # Debug: показать уникальные значения скорости
+            st.write(f"Колонка: {speed_col}")
+            st.write(f"Тип данных: {df[speed_col].dtype}")
+            st.write(f"Уникальные значения: {sorted(df[speed_col].dropna().unique())[:10]}")
 
             # Функция для расчёта статистики по скорости
             def calc_speed_stats(data, speed_val):
