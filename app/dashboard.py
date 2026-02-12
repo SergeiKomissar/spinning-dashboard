@@ -453,7 +453,8 @@ def main():
                 break
         
         if vitki_col is not None:
-            # Показать уникальные значения для определения групп
+            # Конвертируем в числа и показываем уникальные значения
+            df[vitki_col] = pd.to_numeric(df[vitki_col], errors='coerce')
             unique_vitki = sorted(df[vitki_col].dropna().unique())
             st.caption(f"🔍 Уникальные значения витков: {unique_vitki[:10]}")
         else:
