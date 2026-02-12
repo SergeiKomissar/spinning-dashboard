@@ -228,6 +228,11 @@ def main():
             last_3 = df[df['№ партии'].isin(all_parties[-3:])] if len(all_parties) >= 3 else pd.DataFrame()
             last_10 = df[df['№ партии'].isin(all_parties[-10:])] if len(all_parties) >= 10 else pd.DataFrame()
             
+            # Считаем количество машин на каждой вытяжке (в последней партии)
+            last_party_plast = df[df['№ партии'] == all_parties[-1]]
+            machines_60 = len(last_party_plast[pd.to_numeric(last_party_plast[stretch_col], errors='coerce') == 60]['№ ПМ'].unique())
+            machines_65 = len(last_party_plast[pd.to_numeric(last_party_plast[stretch_col], errors='coerce') == 65]['№ ПМ'].unique())
+            
             # Статистика
             stats_1_60 = calc_stats(last_1, 60)
             stats_1_65 = calc_stats(last_1, 65)
@@ -277,6 +282,13 @@ def main():
                     <th><span class="val-65">65%</span></th>
                     <th>Δ</th>
                 </tr>
+                <tr style="background:#1e293b;">
+                    <td colspan="7" style="text-align:left;padding:8px 12px;">
+                        <b>Машин на вытяжке:</b> 
+                        <span class="val-60">60% — {machines_60} шт.</span> | 
+                        <span class="val-65">65% — {machines_65} шт.</span>
+                    </td>
+                </tr>
                 <tr>
                     <td><b>Последняя партия</b><br><small>(n: {stats_1_60['count']} / {stats_1_65['count']})</small></td>
                     <td class="val-60">{stats_1_60['strength']}</td>
@@ -309,6 +321,114 @@ def main():
             st.markdown(table_html, unsafe_allow_html=True)
         else:
             st.warning("Колонка 'Пласт. вытяжка, %' не найдена в данных")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # --- ТАБЛИЦА: Сравнение скорости формования ---
+        st.markdown(f"""
+            <div class="info-block">
+                <h4>⚡ Сравнение: скорость 16.4 vs 18.8 м/мин</h4>
+                <p>Средние показатели прочности и CV для машин с разной скоростью формования.</p>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        speed_col = 'Скорость формования, м/мин'
+        
+        if speed_col in df.columns:
+            # Функция для расчёта статистики по скорости
+            def calc_speed_stats(data, speed_val):
+                filtered = data[pd.to_numeric(data[speed_col], errors='coerce') == speed_val]
+                if len(filtered) == 0:
+                    return {'strength': '-', 'cv': '-', 'count': 0}
+                return {
+                    'strength': f"{filtered['Относительная разрывная нагрузка, сН/текс'].mean():.1f}",
+                    'cv': f"{filtered['Коэффициент вариации, %'].mean():.1f}",
+                    'count': len(filtered)
+                }
+            
+            # Считаем количество машин на каждой скорости (в последней партии)
+            last_party_speed = df[df['№ партии'] == all_parties[-1]]
+            machines_164 = len(last_party_speed[pd.to_numeric(last_party_speed[speed_col], errors='coerce') == 16.4]['№ ПМ'].unique())
+            machines_188 = len(last_party_speed[pd.to_numeric(last_party_speed[speed_col], errors='coerce') == 18.8]['№ ПМ'].unique())
+            
+            # Статистика по скоростям
+            speed_stats_1_164 = calc_speed_stats(last_1, 16.4)
+            speed_stats_1_188 = calc_speed_stats(last_1, 18.8)
+            speed_stats_3_164 = calc_speed_stats(last_3, 16.4)
+            speed_stats_3_188 = calc_speed_stats(last_3, 18.8)
+            speed_stats_10_164 = calc_speed_stats(last_10, 16.4)
+            speed_stats_10_188 = calc_speed_stats(last_10, 18.8)
+            
+            # Функция для цвета разницы (такая же)
+            def speed_diff_color(val164, val188, metric='strength'):
+                try:
+                    v164 = float(val164)
+                    v188 = float(val188)
+                    diff = v188 - v164
+                    if metric == 'strength':
+                        color = '#22c55e' if diff > 0 else '#ef4444' if diff < 0 else '#94a3b8'
+                    else:  # CV - меньше лучше
+                        color = '#22c55e' if diff < 0 else '#ef4444' if diff > 0 else '#94a3b8'
+                    sign = '+' if diff > 0 else ''
+                    return f"<span style='color:{color};font-weight:bold'>{sign}{diff:.1f}</span>"
+                except:
+                    return '-'
+            
+            # HTML таблица для скорости
+            speed_table_html = f"""
+            <table class="compare-table">
+                <tr class="header-row">
+                    <th rowspan="2">Период</th>
+                    <th colspan="3">Разрывная нагрузка, сН/текс</th>
+                    <th colspan="3">Коэф. вариации, %</th>
+                </tr>
+                <tr class="header-row">
+                    <th><span style="color:#f59e0b;font-weight:bold">16.4</span></th>
+                    <th><span style="color:#06b6d4;font-weight:bold">18.8</span></th>
+                    <th>Δ</th>
+                    <th><span style="color:#f59e0b;font-weight:bold">16.4</span></th>
+                    <th><span style="color:#06b6d4;font-weight:bold">18.8</span></th>
+                    <th>Δ</th>
+                </tr>
+                <tr style="background:#1e293b;">
+                    <td colspan="7" style="text-align:left;padding:8px 12px;">
+                        <b>Машин на скорости:</b> 
+                        <span style="color:#f59e0b;font-weight:bold">16.4 м/мин — {machines_164} шт.</span> | 
+                        <span style="color:#06b6d4;font-weight:bold">18.8 м/мин — {machines_188} шт.</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td><b>Последняя партия</b><br><small>(n: {speed_stats_1_164['count']} / {speed_stats_1_188['count']})</small></td>
+                    <td style="color:#f59e0b;font-weight:bold">{speed_stats_1_164['strength']}</td>
+                    <td style="color:#06b6d4;font-weight:bold">{speed_stats_1_188['strength']}</td>
+                    <td>{speed_diff_color(speed_stats_1_164['strength'], speed_stats_1_188['strength'], 'strength')}</td>
+                    <td style="color:#f59e0b;font-weight:bold">{speed_stats_1_164['cv']}</td>
+                    <td style="color:#06b6d4;font-weight:bold">{speed_stats_1_188['cv']}</td>
+                    <td>{speed_diff_color(speed_stats_1_164['cv'], speed_stats_1_188['cv'], 'cv')}</td>
+                </tr>
+                <tr>
+                    <td><b>3 последние партии</b><br><small>(n: {speed_stats_3_164['count']} / {speed_stats_3_188['count']})</small></td>
+                    <td style="color:#f59e0b;font-weight:bold">{speed_stats_3_164['strength']}</td>
+                    <td style="color:#06b6d4;font-weight:bold">{speed_stats_3_188['strength']}</td>
+                    <td>{speed_diff_color(speed_stats_3_164['strength'], speed_stats_3_188['strength'], 'strength')}</td>
+                    <td style="color:#f59e0b;font-weight:bold">{speed_stats_3_164['cv']}</td>
+                    <td style="color:#06b6d4;font-weight:bold">{speed_stats_3_188['cv']}</td>
+                    <td>{speed_diff_color(speed_stats_3_164['cv'], speed_stats_3_188['cv'], 'cv')}</td>
+                </tr>
+                <tr>
+                    <td><b>10 последних партий</b><br><small>(n: {speed_stats_10_164['count']} / {speed_stats_10_188['count']})</small></td>
+                    <td style="color:#f59e0b;font-weight:bold">{speed_stats_10_164['strength']}</td>
+                    <td style="color:#06b6d4;font-weight:bold">{speed_stats_10_188['strength']}</td>
+                    <td>{speed_diff_color(speed_stats_10_164['strength'], speed_stats_10_188['strength'], 'strength')}</td>
+                    <td style="color:#f59e0b;font-weight:bold">{speed_stats_10_164['cv']}</td>
+                    <td style="color:#06b6d4;font-weight:bold">{speed_stats_10_188['cv']}</td>
+                    <td>{speed_diff_color(speed_stats_10_164['cv'], speed_stats_10_188['cv'], 'cv')}</td>
+                </tr>
+            </table>
+            """
+            st.markdown(speed_table_html, unsafe_allow_html=True)
+        else:
+            st.warning("Колонка 'Скорость формования, м/мин' не найдена в данных")
 
         st.markdown("<br>", unsafe_allow_html=True)
 
