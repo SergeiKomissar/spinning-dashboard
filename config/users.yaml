@@ -16,6 +16,10 @@ credentials:
       name: Александр Злобин
       password: '673918'
       role: user
+    romannosov:
+      name: Роман Носов
+      password: '081981'
+      role: user
 
 cookie:
   expiry_days: 30
