@@ -199,7 +199,7 @@ def create_trend_chart(last_10_parties, df=None, speed_col=None):
     if len(x_raw) == 0:
         fig.update_layout(
             title='Динамика разрывной нагрузки',
-            height=400,
+            height=550,
             plot_bgcolor=COLORS['background'],
             paper_bgcolor=COLORS['background']
         )
@@ -209,13 +209,13 @@ def create_trend_chart(last_10_parties, df=None, speed_col=None):
     if df is not None and speed_col is not None:
         parties_list = last_10_parties.index.tolist()
         
-        # Определяем уникальные скорости
-        speed_values = sorted(df[speed_col].dropna().unique())
         speed_configs = {
-            188: {'name': '18,8 м/мин', 'color': '#06b6d4', 'dash': 'solid'},
-            164: {'name': '16,4 м/мин', 'color': '#f59e0b', 'dash': 'solid'},
-            203: {'name': '20,3 м/мин', 'color': '#a78bfa', 'dash': 'solid'},
+            188: {'name': '18,8 м/мин', 'color': '#06b6d4', 'symbol': 'circle'},
+            164: {'name': '16,4 м/мин', 'color': '#f59e0b', 'symbol': 'square'},
+            203: {'name': '20,3 м/мин', 'color': '#a78bfa', 'symbol': 'diamond'},
         }
+        
+        speed_values = sorted(df[speed_col].dropna().unique())
         
         for speed_val in speed_values:
             speed_data = df[(df['№ партии'].isin(parties_list)) & (df[speed_col] == speed_val)]
@@ -228,45 +228,70 @@ def create_trend_chart(last_10_parties, df=None, speed_col=None):
             y_s = grouped.values
             x_s_display = x_s - 714
             
-            config = speed_configs.get(int(speed_val), {'name': f'{speed_val}', 'color': '#94a3b8', 'dash': 'solid'})
+            config = speed_configs.get(int(speed_val), {'name': f'{speed_val}', 'color': '#94a3b8', 'symbol': 'circle'})
+            mean_val = np.mean(y_s)
             
+            # Основная линия с точками и значениями
             fig.add_trace(go.Scatter(
                 x=x_s_display,
                 y=y_s,
                 name=config['name'],
-                line=dict(color=config['color'], width=3, dash=config['dash']),
+                line=dict(color=config['color'], width=3),
                 mode='lines+markers+text',
-                marker=dict(size=10, color=config['color'], line=dict(color=COLORS['background'], width=2)),
+                marker=dict(size=10, color=config['color'], symbol=config['symbol'],
+                    line=dict(color=COLORS['background'], width=2)),
                 text=[f"{v:.1f}" for v in y_s],
                 textposition='top center',
                 textfont=dict(size=10, color=config['color']),
                 hovertemplate=f"<b>{config['name']}</b><br>Партия %{{x}}<br>Нагрузка: %{{y:.1f}}<extra></extra>"
             ))
+            
+            # Линия среднего
+            fig.add_shape(
+                type="line",
+                x0=min(x_s_display) - 0.3, x1=max(x_s_display) + 0.3,
+                y0=mean_val, y1=mean_val,
+                line=dict(color=config['color'], width=1.5, dash='dot'),
+            )
+            fig.add_annotation(
+                x=max(x_s_display) + 0.5, y=mean_val,
+                text=f"μ={mean_val:.1f}",
+                font=dict(color=config['color'], size=10),
+                showarrow=False, xanchor='left'
+            )
+            
+            # Линия тренда
+            if len(x_s) > 1:
+                coefficients = np.polyfit(x_s, y_s, 1)
+                trend_line = np.poly1d(coefficients)
+                y_trend = trend_line(x_s)
+                
+                trend_direction = "↗" if coefficients[0] > 0 else "↘"
+                
+                fig.add_trace(go.Scatter(
+                    x=x_s_display,
+                    y=y_trend,
+                    name=f'Тренд {config["name"]} {trend_direction}',
+                    line=dict(color=config['color'], width=2, dash='dash'),
+                    mode='lines',
+                    showlegend=False,
+                    hoverinfo='skip'
+                ))
     else:
-        # Градиентная заливка под линией
+        # Градиентная заливка
         fig.add_trace(go.Scatter(
-            x=x_display,
-            y=y_values,
-            fill='tozeroy',
-            fillcolor='rgba(0, 212, 255, 0.1)',
-            line=dict(color='rgba(0,0,0,0)'),
-            showlegend=False,
-            hoverinfo='skip'
+            x=x_display, y=y_values,
+            fill='tozeroy', fillcolor='rgba(0, 212, 255, 0.1)',
+            line=dict(color='rgba(0,0,0,0)'), showlegend=False, hoverinfo='skip'
         ))
         
-        # Основная линия с точками и значениями
         fig.add_trace(go.Scatter(
-            x=x_display,
-            y=y_values,
+            x=x_display, y=y_values,
             name='Разрывная нагрузка',
             line=dict(color=COLORS['primary'], width=3, shape='spline'),
             mode='lines+markers+text',
-            marker=dict(
-                size=12,
-                color=COLORS['primary'],
-                line=dict(color=COLORS['background'], width=2),
-                symbol='circle'
-            ),
+            marker=dict(size=12, color=COLORS['primary'],
+                line=dict(color=COLORS['background'], width=2), symbol='circle'),
             text=[f"{v:.1f}" for v in y_values],
             textposition='top center',
             textfont=dict(size=11, color=COLORS['text']),
@@ -276,7 +301,7 @@ def create_trend_chart(last_10_parties, df=None, speed_col=None):
     # Пороговая линия
     fig.add_shape(
         type="line",
-        x0=min(x_display), x1=max(x_display),
+        x0=min(x_display) - 0.5, x1=max(x_display) + 0.5,
         y0=QUALITY_THRESHOLDS['strength_min'], 
         y1=QUALITY_THRESHOLDS['strength_min'],
         line=dict(color=COLORS['danger'], dash="dot", width=2)
@@ -290,11 +315,6 @@ def create_trend_chart(last_10_parties, df=None, speed_col=None):
         xanchor='left',
         xshift=10
     )
-    
-    # Определяем диапазон Y
-    all_y = y_values
-    y_min = min(all_y) - 10 if len(all_y) > 0 else 250
-    y_max = max(all_y) + 15 if len(all_y) > 0 else 300
     
     fig.update_layout(
         title=dict(
@@ -310,11 +330,10 @@ def create_trend_chart(last_10_parties, df=None, speed_col=None):
             showgrid=True,
             gridwidth=1,
             zeroline=False,
-            range=[min(x_display) - 0.5, max(x_display) + 0.5],
+            range=[min(x_display) - 0.5, max(x_display) + 1.5],
             dtick=1
         ),
         yaxis=dict(
-            range=[y_min, y_max],
             title='Разрывная нагрузка, сН/текс',
             title_font=dict(size=12, color=COLORS['text_secondary']),
             tickfont=dict(color=COLORS['text_secondary']),
@@ -323,11 +342,11 @@ def create_trend_chart(last_10_parties, df=None, speed_col=None):
             gridwidth=1,
             zeroline=False
         ),
-        height=400,
+        height=550,
         hovermode='x unified',
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(t=80, b=60, l=60, r=80),
+        margin=dict(t=80, b=60, l=60, r=100),
         showlegend=True,
         legend=dict(
             yanchor="top", y=0.99,
