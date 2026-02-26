@@ -186,8 +186,8 @@ def create_heatmap(df, metric_column, title, threshold_config):
     return fig
 
 
-def create_trend_chart(last_10_parties):
-    """Создание графика тенденций с тёмной темой"""
+def create_trend_chart(last_10_parties, df=None, speed_col=None):
+    """Создание графика тенденций с разделением по скоростям"""
     fig = go.Figure()
     
     x_raw = np.array(last_10_parties.index)
@@ -205,55 +205,75 @@ def create_trend_chart(last_10_parties):
         )
         return fig
     
-    # Градиентная заливка под линией
-    fig.add_trace(go.Scatter(
-        x=x_display,
-        y=y_values,
-        fill='tozeroy',
-        fillcolor='rgba(0, 212, 255, 0.1)',
-        line=dict(color='rgba(0,0,0,0)'),
-        showlegend=False,
-        hoverinfo='skip'
-    ))
-    
-    # Основная линия с точками и значениями
-    fig.add_trace(go.Scatter(
-        x=x_display,
-        y=y_values,
-        name='Разрывная нагрузка',
-        line=dict(color=COLORS['primary'], width=3, shape='spline'),
-        mode='lines+markers+text',
-        marker=dict(
-            size=12,
-            color=COLORS['primary'],
-            line=dict(color=COLORS['background'], width=2),
-            symbol='circle'
-        ),
-        text=[f"{v:.1f}" for v in y_values],
-        textposition='top center',
-        textfont=dict(size=11, color=COLORS['text']),
-        hovertemplate="Партия %{x}<br>Нагрузка: %{y:.1f} сН/текс<extra></extra>"
-    ))
-    
-    if len(x_raw) > 1:
-        # Линия тренда
-        coefficients = np.polyfit(x_raw, y_values, 1)
-        trend_line = np.poly1d(coefficients)
-        y_trend = trend_line(x_raw)
+    # Если есть данные по скоростям — рисуем раздельно
+    if df is not None and speed_col is not None:
+        parties_list = last_10_parties.index.tolist()
         
-        trend_direction = "↗" if coefficients[0] > 0 else "↘"
-        trend_color = COLORS['success'] if coefficients[0] > 0 else COLORS['danger']
+        # Определяем уникальные скорости
+        speed_values = sorted(df[speed_col].dropna().unique())
+        speed_configs = {
+            188: {'name': '18,8 м/мин', 'color': '#06b6d4', 'dash': 'solid'},
+            164: {'name': '16,4 м/мин', 'color': '#f59e0b', 'dash': 'solid'},
+            203: {'name': '20,3 м/мин', 'color': '#a78bfa', 'dash': 'solid'},
+        }
         
+        for speed_val in speed_values:
+            speed_data = df[(df['№ партии'].isin(parties_list)) & (df[speed_col] == speed_val)]
+            if len(speed_data) == 0:
+                continue
+            
+            grouped = speed_data.groupby('№ партии')['Относительная разрывная нагрузка, сН/текс'].mean()
+            
+            x_s = np.array(grouped.index)
+            y_s = grouped.values
+            x_s_display = x_s - 714
+            
+            config = speed_configs.get(int(speed_val), {'name': f'{speed_val}', 'color': '#94a3b8', 'dash': 'solid'})
+            
+            fig.add_trace(go.Scatter(
+                x=x_s_display,
+                y=y_s,
+                name=config['name'],
+                line=dict(color=config['color'], width=3, dash=config['dash']),
+                mode='lines+markers+text',
+                marker=dict(size=10, color=config['color'], line=dict(color=COLORS['background'], width=2)),
+                text=[f"{v:.1f}" for v in y_s],
+                textposition='top center',
+                textfont=dict(size=10, color=config['color']),
+                hovertemplate=f"<b>{config['name']}</b><br>Партия %{{x}}<br>Нагрузка: %{{y:.1f}}<extra></extra>"
+            ))
+    else:
+        # Градиентная заливка под линией
         fig.add_trace(go.Scatter(
             x=x_display,
-            y=y_trend,
-            name=f'Тренд {trend_direction}',
-            line=dict(color=trend_color, width=2, dash='dash'),
-            mode='lines',
+            y=y_values,
+            fill='tozeroy',
+            fillcolor='rgba(0, 212, 255, 0.1)',
+            line=dict(color='rgba(0,0,0,0)'),
+            showlegend=False,
             hoverinfo='skip'
         ))
+        
+        # Основная линия с точками и значениями
+        fig.add_trace(go.Scatter(
+            x=x_display,
+            y=y_values,
+            name='Разрывная нагрузка',
+            line=dict(color=COLORS['primary'], width=3, shape='spline'),
+            mode='lines+markers+text',
+            marker=dict(
+                size=12,
+                color=COLORS['primary'],
+                line=dict(color=COLORS['background'], width=2),
+                symbol='circle'
+            ),
+            text=[f"{v:.1f}" for v in y_values],
+            textposition='top center',
+            textfont=dict(size=11, color=COLORS['text']),
+            hovertemplate="Партия %{x}<br>Нагрузка: %{y:.1f} сН/текс<extra></extra>"
+        ))
 
-    # Пороговая линия (используем смещённые x)
+    # Пороговая линия
     fig.add_shape(
         type="line",
         x0=min(x_display), x1=max(x_display),
@@ -271,9 +291,14 @@ def create_trend_chart(last_10_parties):
         xshift=10
     )
     
+    # Определяем диапазон Y
+    all_y = y_values
+    y_min = min(all_y) - 10 if len(all_y) > 0 else 250
+    y_max = max(all_y) + 15 if len(all_y) > 0 else 300
+    
     fig.update_layout(
         title=dict(
-            text='<b>Динамика разрывной нагрузки</b>',
+            text='<b>Динамика разрывной нагрузки по скоростям</b>',
             font=dict(size=20, color=COLORS['text'], family=CHART_CONFIG['font_family']),
             x=0.5
         ),
@@ -289,7 +314,7 @@ def create_trend_chart(last_10_parties):
             dtick=1
         ),
         yaxis=dict(
-            range=[min(y_values) - 10, max(y_values) + 10],
+            range=[y_min, y_max],
             title='Разрывная нагрузка, сН/текс',
             title_font=dict(size=12, color=COLORS['text_secondary']),
             tickfont=dict(color=COLORS['text_secondary']),

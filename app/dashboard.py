@@ -148,7 +148,14 @@ def main():
             .tail(10)
         )
         
-        trend_fig = create_trend_chart(last_10_parties)
+        # Ищем колонку скорости для графика
+        trend_speed_col = None
+        for col in df.columns:
+            if 'Скорость' in col and 'формования' in col:
+                trend_speed_col = col
+                break
+        
+        trend_fig = create_trend_chart(last_10_parties, df=df, speed_col=trend_speed_col)
         st.plotly_chart(trend_fig, use_container_width=True, config={'displayModeBar': False})
         
         st.markdown("<br>", unsafe_allow_html=True)
