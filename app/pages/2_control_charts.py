@@ -328,7 +328,7 @@ def create_control_chart(data_x, data_y, cl, ucl, lcl, title, y_title,
                    font=dict(size=16, color=COLORS['text'], family=CHART_CONFIG['font_family']), x=0.5),
         xaxis=dict(title='Партия', title_font=dict(size=12, color=COLORS['text_secondary']),
                    tickfont=dict(color=COLORS['text_secondary']),
-                   gridcolor=COLORS['grid'], showgrid=True, dtick=1),
+                   gridcolor=COLORS['grid'], showgrid=True, dtick=1, showticklabels=(len(data_x) <= 30)),
         yaxis=dict(title=y_title, title_font=dict(size=12, color=COLORS['text_secondary']),
                    tickfont=dict(color=COLORS['text_secondary']),
                    gridcolor=COLORS['grid'], showgrid=True, range=[y_min, y_max]),
@@ -389,7 +389,7 @@ def create_p_chart(data, title):
         title=dict(text=f'<b>{title}</b>', font=dict(size=16, color=COLORS['text']), x=0.5),
         xaxis=dict(title='Партия', title_font=dict(size=12, color=COLORS['text_secondary']),
                    tickfont=dict(color=COLORS['text_secondary']),
-                   gridcolor=COLORS['grid'], showgrid=True, dtick=1),
+                   gridcolor=COLORS['grid'], showgrid=True, dtick=1, showticklabels=(len(x) <= 30)),
         yaxis=dict(title='Доля несоответствующих, %',
                    title_font=dict(size=12, color=COLORS['text_secondary']),
                    tickfont=dict(color=COLORS['text_secondary']),
@@ -615,6 +615,12 @@ def main():
         st.warning("Недостаточно данных для построения X\u0304-S карты")
 
     st.markdown("<div style='height:32px'></div>", unsafe_allow_html=True)
+
+    # Пропуск тяжёлых графиков при большом объёме данных
+    _n = len(all_parties) if n_parties == "Все" else n_parties
+    if _n > 200:
+        st.info("p-карты и X-MR карта не отображаются при выборе более 200 партий (долгие вычисления).")
+        return
 
     # ============================================================
     # 3. P-КАРТА
