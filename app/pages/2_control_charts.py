@@ -485,11 +485,14 @@ def main():
     with settings_cols[0]:
         n_parties = st.selectbox(
             "Количество партий для анализа:",
-            [10, 15, 20, 25, 30, 50], index=2, key="spc_n_parties"
+            [10, 15, 20, 25, 30, 50, 100, 200, 500, 1000, "Все"], index=2, key="spc_n_parties"
         )
 
     all_parties = sorted(df['№ партии'].dropna().unique())
-    selected_parties = all_parties[-n_parties:] if len(all_parties) > n_parties else all_parties
+    if n_parties == "Все":
+        selected_parties = all_parties
+    else:
+        selected_parties = all_parties[-n_parties:] if len(all_parties) > n_parties else all_parties
     df_filtered = df[df['№ партии'].isin(selected_parties)]
 
     strength_col = 'Относительная разрывная нагрузка, сН/текс'
