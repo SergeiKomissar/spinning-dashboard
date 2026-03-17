@@ -321,7 +321,7 @@ def render_party_header(party_number):
     ''', unsafe_allow_html=True)
 
 
-def render_metrics_section(metrics, prev_metrics=None):
+def render_metrics_section(metrics, prev_metrics=None, strength_min=270):
     """Отрисовка секции с метриками"""
     col1, col2, col3, col4 = st.columns(4)
 
@@ -333,8 +333,8 @@ def render_metrics_section(metrics, prev_metrics=None):
         st.metric(
             "Средняя нагрузка",
             f"{metrics['avg_strength']} сН/текс",
-            delta=delta_val if delta_val else f"мин: 270",
-            delta_color="normal" if metrics['avg_strength'] >= 270 else "inverse"
+            delta=delta_val if delta_val else f"мин: {strength_min}",
+            delta_color="normal" if metrics['avg_strength'] >= strength_min else "inverse"
         )
 
     with col2:

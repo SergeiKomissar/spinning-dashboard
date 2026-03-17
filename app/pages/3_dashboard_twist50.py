@@ -91,7 +91,7 @@ def main():
         render_party_header(last_party)
 
         # Расчет метрик
-        metrics = calculate_party_metrics(last_party_data)
+        metrics = calculate_party_metrics(last_party_data, thresholds=QUALITY_THRESHOLDS)
 
         # Предыдущая партия для сравнения
         all_parties_sorted = sorted(df['№ партии'].dropna().unique())
@@ -99,10 +99,10 @@ def main():
         if len(all_parties_sorted) >= 2:
             prev_party = all_parties_sorted[-2]
             prev_party_data = df[df['№ партии'] == prev_party]
-            prev_metrics = calculate_party_metrics(prev_party_data)
+            prev_metrics = calculate_party_metrics(prev_party_data, thresholds=QUALITY_THRESHOLDS)
 
         # Секция метрик
-        render_metrics_section(metrics, prev_metrics)
+        render_metrics_section(metrics, prev_metrics, strength_min=QUALITY_THRESHOLDS["strength_min"])
 
         # Alert banner если много отклонений
         total_issues = metrics['low_strength_count'] + metrics['high_cv_count'] + metrics['bad_density_count']
