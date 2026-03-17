@@ -194,7 +194,7 @@ def main():
             </div>
         """, unsafe_allow_html=True)
 
-        problem_chart = create_problem_machines_chart(df, last_n_parties=10)
+        problem_chart = create_problem_machines_chart(df, last_n_parties=10, strength_min=QUALITY_THRESHOLDS['strength_min'])
         st.plotly_chart(problem_chart, use_container_width=True, config={'displayModeBar': False})
 
         st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)

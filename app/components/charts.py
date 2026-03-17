@@ -396,7 +396,7 @@ def create_pie_chart(total, bad, title, good_label, bad_label):
 
 
 
-def create_problem_machines_chart(df, last_n_parties=10):
+def create_problem_machines_chart(df, last_n_parties=10, strength_min=None):
     """Топ проблемных машин - простой горизонтальный bar chart"""
     
     recent_parties = sorted(df['№ партии'].dropna().unique())[-last_n_parties:]
@@ -408,7 +408,8 @@ def create_problem_machines_chart(df, last_n_parties=10):
     for machine in machines:
         machine_data = recent_data[recent_data['№ ПМ'] == machine]
         
-        low_strength = (machine_data['Относительная разрывная нагрузка, сН/текс'] < QUALITY_THRESHOLDS['strength_min']).sum()
+        _s_min = strength_min if strength_min is not None else QUALITY_THRESHOLDS['strength_min']
+        low_strength = (machine_data['Относительная разрывная нагрузка, сН/текс'] < _s_min).sum()
         high_cv = (machine_data['Коэффициент вариации, %'] > QUALITY_THRESHOLDS['cv_max']).sum()
         
         total = low_strength + high_cv
@@ -459,7 +460,7 @@ def create_quality_scatter(df, party_number=None, strength_min=None):
     if party_number is None:
         party_number = df['№ партии'].max()
     
-    _strength_min = strength_min if strength_min is not None else _strength_min
+    _strength_min = strength_min if strength_min is not None else QUALITY_THRESHOLDS['strength_min']
 
     party_data = df[df['№ партии'] == party_number].copy()
     
@@ -549,7 +550,7 @@ def create_quality_scatter(df, party_number=None, strength_min=None):
 
 
 
-def create_sparkline(values, parties, metric_type='strength', height=50):
+def create_sparkline(values, parties, metric_type='strength', height=50, strength_min=None):
     """Компактный мини-график без подписей"""
     
     if len(values) == 0:
@@ -559,9 +560,9 @@ def create_sparkline(values, parties, metric_type='strength', height=50):
     
     # Настройки по типу метрики
     if metric_type == 'strength':
-        threshold = QUALITY_THRESHOLDS['strength_min']
+        threshold = strength_min if strength_min is not None else QUALITY_THRESHOLDS['strength_min']
         colors = [COLORS['success'] if v >= mean_val else COLORS['danger'] if v < threshold else COLORS['warning'] for v in values]
-        y_range = [min(min(values) - 10, 250), max(max(values) + 10, 300)]
+        y_range = [min(min(values) - 10, threshold - 20), max(max(values) + 10, threshold + 50)]
     elif metric_type == 'cv':
         threshold = QUALITY_THRESHOLDS['cv_max']
         colors = [COLORS['success'] if v <= mean_val else COLORS['danger'] if v > threshold else COLORS['warning'] for v in values]
@@ -608,7 +609,7 @@ def create_sparkline(values, parties, metric_type='strength', height=50):
     return fig
 
 
-def create_plastification_comparison(df, last_n_parties=10):
+def create_plastification_comparison(df, last_n_parties=10, strength_min=None):
     """Сравнение прочности - Strip plot с точками и линией среднего"""
     stretch_col = 'Пласт. вытяжка, %'
 
@@ -671,8 +672,9 @@ def create_plastification_comparison(df, last_n_parties=10):
             showarrow=False, yshift=15, font=dict(size=14, color=COLORS['secondary']))
 
     # Пороговая линия
-    fig.add_hline(y=QUALITY_THRESHOLDS['strength_min'], line=dict(color=COLORS['danger'], dash='dash', width=2),
-        annotation_text=f"Мин: {QUALITY_THRESHOLDS['strength_min']}", annotation_position="right",
+    _plast_s_min = strength_min if strength_min is not None else QUALITY_THRESHOLDS['strength_min']
+    fig.add_hline(y=_plast_s_min, line=dict(color=COLORS['danger'], dash='dash', width=2),
+        annotation_text=f'Мин: {_plast_s_min}', annotation_position="right",
         annotation_font=dict(color=COLORS['danger'], size=11))
 
     # Разница
