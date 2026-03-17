@@ -8,12 +8,12 @@ from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.data_processing import load_data
-from utils.constants import COLORS, CHART_CONFIG, QUALITY_THRESHOLDS
+from utils.constants import COLORS, CHART_CONFIG, QUALITY_THRESHOLDS_50 as QUALITY_THRESHOLDS
 from utils.auth import login_form, logout_button
 from components.layout import inject_custom_css
 
 st.set_page_config(
-    page_title="Контрольные карты | 100 кр/м",
+    page_title="Контрольные карты | 50 кр/м",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -447,7 +447,7 @@ def main():
     inject_custom_css()
 
     st.markdown(
-        '<div class="dashboard-header">Контрольные карты Шухарта — 100 кр/м</div>',
+        '<div class="dashboard-header">Контрольные карты Шухарта — 50 кр/м</div>',
         unsafe_allow_html=True
     )
 
@@ -457,7 +457,7 @@ def main():
     with header_cols[1]:
         st.markdown(f"<span style='color:#64748b;font-size:12px;'>Обновлено: {datetime.now().strftime('%d.%m.%Y %H:%M')}</span>", unsafe_allow_html=True)
     with header_cols[2]:
-        if st.button('Обновить', key="spc_refresh"):
+        if st.button('Обновить', key="spc_refresh_50"):
             load_data.clear()
             st.rerun()
     with header_cols[3]:
@@ -466,19 +466,19 @@ def main():
     with st.spinner('Загрузка данных...'):
         if 'df' not in st.session_state:
             st.session_state.df = load_data()
-        df = st.session_state.df
+        df = st.session_state.df.copy() if st.session_state.df is not None else None
 
     if df is None or df.empty:
         st.error("Не удалось загрузить данные.")
         return
 
-    # Фильтрация по крутке 100
+    # Фильтрация по крутке 50
     if 'Крутка' in df.columns:
-        df = df[df['Крутка'] == 100].copy()
+        df = df[df['Крутка'] == 50].copy()
 
     st.markdown("""
         <div class="info-block">
-            <h4>Статистическое управление процессом (SPC) — Нить 100 кр/м</h4>
+            <h4>Статистическое управление процессом (SPC) — Нить 50 кр/м</h4>
             <p>Контрольные карты построены по ГОСТ ISO 7870-2.
             Подгруппа = все машины одной партии. Красные точки — сигналы выхода из управляемого состояния.
             Жёлтые пунктирные линии — предупредительные границы (±2σ).</p>
@@ -489,7 +489,7 @@ def main():
     with settings_cols[0]:
         n_parties = st.selectbox(
             "Количество партий для анализа:",
-            [10, 15, 20, 25, 30, 50, 100, 200, 500, 1000, "Все"], index=2, key="spc_n_parties"
+            [10, 15, 20, 25, 30, 50, 100, 200, 500, 1000, "Все"], index=2, key="spc_n_parties_50"
         )
 
     all_parties = sorted(df['№ партии'].dropna().unique())
@@ -680,14 +680,14 @@ def main():
     with machine_cols[0]:
         selected_machine = st.selectbox(
             "Выберите машину:", machines,
-            format_func=lambda x: f"ПМ {int(x)}", key="spc_machine"
+            format_func=lambda x: f"ПМ {int(x)}", key="spc_machine_50"
         )
 
     with machine_cols[1]:
         xmr_metric = st.selectbox(
             "Метрика:", [strength_col, cv_col],
             format_func=lambda x: "Разрывная нагрузка" if "нагрузка" in x else "Коэф. вариации",
-            key="spc_xmr_metric"
+            key="spc_xmr_metric_50"
         )
 
     if selected_machine:
@@ -745,7 +745,7 @@ def main():
 
     st.markdown(f"""
         <div style="text-align: center; margin-top: 40px; padding: 20px; color: {COLORS['text_secondary']};">
-            <small>Контрольные карты по ГОСТ ISO 7870-2 | Данные из Google Sheets</small>
+            <small>Контрольные карты по ГОСТ ISO 7870-2 | Нить 50 кр/м | Данные из Google Sheets</small>
         </div>
     """, unsafe_allow_html=True)
 

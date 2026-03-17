@@ -7,18 +7,18 @@ from datetime import datetime
 
 # Конфигурация страницы - должна быть первой командой Streamlit
 st.set_page_config(
-    page_title="Отчёт | Нить 100 кр/м",
+    page_title="Отчёт | Нить 50 кр/м",
     page_icon="🏭",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from components.charts import create_gauge_chart, create_trend_chart, create_heatmap, create_problem_machines_chart, create_quality_scatter, create_sparkline
 from components.metrics import calculate_party_metrics, get_status_indicator, get_quality_score
 from components.layout import render_page_header, render_party_header, render_metrics_section
 from utils.data_processing import load_data
-from utils.constants import QUALITY_THRESHOLDS, COLORS, GAUGE_CONFIG, QUALITY_THRESHOLDS_50
+from utils.constants import QUALITY_THRESHOLDS_50 as QUALITY_THRESHOLDS, COLORS, GAUGE_CONFIG
 from utils.auth import login_form, logout_button, is_admin
 import pandas as pd
 
@@ -28,7 +28,7 @@ def main():
     if not login_form():
         return
 
-    render_page_header(subtitle='Нить с круткой 100 кр/м')
+    render_page_header(subtitle='Нить с круткой 50 кр/м')
 
     # Компактная шапка: имя + timestamp + обновить + выход
     header_cols = st.columns([3, 2, 1, 1])
@@ -37,7 +37,7 @@ def main():
     with header_cols[1]:
         st.markdown(f"<span style='color:#64748b;font-size:12px;'>Обновлено: {datetime.now().strftime('%d.%m.%Y %H:%M')}</span>", unsafe_allow_html=True)
     with header_cols[2]:
-        if st.button('Обновить', key="refresh_button"):
+        if st.button('Обновить', key="refresh_button_50"):
             with st.spinner('Обновление...'):
                 load_data.clear()
                 new_data = load_data()
@@ -45,6 +45,7 @@ def main():
                     st.session_state.df = new_data
                     st.success('Данные обновлены!')
                     st.rerun()
+
                 else:
                     st.error('Ошибка обновления')
     with header_cols[3]:
@@ -62,7 +63,7 @@ def main():
     with st.spinner('Загрузка данных...'):
         if 'df' not in st.session_state:
             st.session_state.df = load_data()
-        df = st.session_state.df
+        df = st.session_state.df.copy() if st.session_state.df is not None else None
 
     if df is None:
         st.error("Не удалось загрузить данные. Проверьте подключение к Google Sheets.")
@@ -73,9 +74,9 @@ def main():
             st.warning("Данные отсутствуют")
             return
 
-        # Фильтрация по крутке 100
+        # Фильтрация по крутке 50
         if 'Крутка' in df.columns:
-            df = df[df['Крутка'] == 100].copy()
+            df = df[df['Крутка'] == 50].copy()
 
         # Получаем данные последней партии
         last_party_series = df['№ партии'].dropna()
@@ -144,7 +145,7 @@ def main():
         bar_cols = st.columns(3)
         with bar_cols[0]:
             good_s = metrics['total_machines'] - metrics['low_strength_count']
-            st.markdown(progress_bar("Разрывная нагрузка, сН/текс", metrics['avg_strength'], 200, 350, 270, 'greater', good_s, metrics['total_machines']), unsafe_allow_html=True)
+            st.markdown(progress_bar("Разрывная нагрузка, сН/текс", metrics['avg_strength'], 200, 350, 250, 'greater', good_s, metrics['total_machines']), unsafe_allow_html=True)
         with bar_cols[1]:
             good_c = metrics['total_machines'] - metrics['high_cv_count']
             st.markdown(progress_bar("Коэф. вариации, %", metrics['avg_cv'], 0, 15, 9.0, 'less', good_c, metrics['total_machines']), unsafe_allow_html=True)
@@ -215,7 +216,7 @@ def main():
             "Выберите партию для анализа:",
             range(len(display_parties)),
             format_func=lambda x: display_parties[x],
-            key="party_selector"
+            key="party_selector_50"
         )
         selected_party = all_parties[selected_idx]
 
@@ -471,11 +472,11 @@ def main():
 
         # Функции для цветовой раскраски
         def get_strength_color(val):
-            if val < 260:
+            if val < 240:
                 return '#ef4444'  # красный
-            elif val < 270:
+            elif val < 250:
                 return '#f97316'  # оранжевый
-            elif val < 280:
+            elif val < 260:
                 return '#eab308'  # жёлтый
             else:
                 return '#22c55e'  # зелёный
@@ -533,13 +534,13 @@ def main():
                             marker=dict(size=10, color=colors),
                             text=[f"{v:.1f}" for v in strength_vals], textposition='top center',
                             textfont=dict(size=10, color=COLORS['text']), name='Значение'))
-                        fig.add_hline(y=270, line=dict(color=COLORS['danger'], width=2, dash='dash'),
-                            annotation_text="Мин: 270", annotation_position="right")
+                        fig.add_hline(y=250, line=dict(color=COLORS['danger'], width=2, dash='dash'),
+                            annotation_text="Мин: 250", annotation_position="right")
                         fig.add_hline(y=mean_s, line=dict(color=COLORS['success'], width=2),
                             annotation_text=f"Ср: {mean_s:.1f}", annotation_position="right")
                         fig.update_layout(title='Разрывная нагрузка, сН/текс', height=300,
                             xaxis=dict(title='Партия', tickfont=dict(color=COLORS['text_secondary'])),
-                            yaxis=dict(range=[min(min(strength_vals)-10, 250), max(max(strength_vals)+15, 300)],
+                            yaxis=dict(range=[min(min(strength_vals)-10, 230), max(max(strength_vals)+15, 280)],
                                 tickfont=dict(color=COLORS['text_secondary'])),
                             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                             font=dict(color=COLORS['text']), showlegend=False, margin=dict(t=40,b=40,l=40,r=60))

@@ -300,12 +300,13 @@ def inject_custom_css():
     """, unsafe_allow_html=True)
 
 
-def render_page_header():
+def render_page_header(subtitle=None):
     """Отрисовка заголовка страницы"""
     inject_custom_css()
 
+    subtitle_html = f'<div style="text-align:center;color:#64748b;font-size:14px;margin-top:-8px;margin-bottom:8px;">{subtitle}</div>' if subtitle else ''
     st.markdown(
-        '<div class="dashboard-header">Качество термообработанной нити</div>',
+        f'<div class="dashboard-header">Качество термообработанной нити</div>{subtitle_html}',
         unsafe_allow_html=True
     )
 

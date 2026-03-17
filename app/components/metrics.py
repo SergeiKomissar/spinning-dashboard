@@ -3,14 +3,16 @@ import sys
 import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils.constants import COLORS, QUALITY_THRESHOLDS
+from utils.constants import COLORS, QUALITY_THRESHOLDS, QUALITY_THRESHOLDS_50
 import streamlit as st
 
-def calculate_party_metrics(party_data):
+def calculate_party_metrics(party_data, thresholds=None):
     """Расчет метрик для партии"""
-    strength_min = QUALITY_THRESHOLDS['strength_min']
-    cv_max = QUALITY_THRESHOLDS['cv_max']
-    density_min, density_max = QUALITY_THRESHOLDS['density_range']
+    if thresholds is None:
+        thresholds = QUALITY_THRESHOLDS
+    strength_min = thresholds['strength_min']
+    cv_max = thresholds['cv_max']
+    density_min, density_max = thresholds['density_range']
     
     metrics = {
         'avg_strength': round(party_data['Относительная разрывная нагрузка, сН/текс'].mean(), 1),

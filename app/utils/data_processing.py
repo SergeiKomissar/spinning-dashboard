@@ -97,7 +97,7 @@ def load_data():
                     speed_col = c
                     break
             
-            numeric_columns = ['№ партии', '№ ПМ', 'Относительная разрывная нагрузка, сН/текс']
+            numeric_columns = ['№ партии', '№ ПМ', 'Относительная разрывная нагрузка, сН/текс', 'Крутка']
             if speed_col:
                 numeric_columns.append(speed_col)
             
