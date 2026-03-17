@@ -18,7 +18,7 @@ from components.charts import create_gauge_chart, create_trend_chart, create_hea
 from components.metrics import calculate_party_metrics, get_status_indicator, get_quality_score
 from components.layout import render_page_header, render_party_header, render_metrics_section
 from utils.data_processing import load_data
-from utils.constants import QUALITY_THRESHOLDS, COLORS, GAUGE_CONFIG, QUALITY_THRESHOLDS_50
+from utils.constants import QUALITY_THRESHOLDS, COLORS, GAUGE_CONFIG
 from utils.auth import login_form, logout_button, is_admin
 import pandas as pd
 
