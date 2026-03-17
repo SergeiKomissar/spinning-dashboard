@@ -186,7 +186,7 @@ def create_heatmap(df, metric_column, title, threshold_config):
     return fig
 
 
-def create_trend_chart(last_10_parties, df=None, speed_col=None):
+def create_trend_chart(last_10_parties, df=None, speed_col=None, strength_min=None):
     """Создание графика тенденций с разделением по скоростям"""
     fig = go.Figure()
     
@@ -299,17 +299,18 @@ def create_trend_chart(last_10_parties, df=None, speed_col=None):
         ))
 
     # Пороговая линия
+    _strength_min = strength_min if strength_min is not None else QUALITY_THRESHOLDS['strength_min']
     fig.add_shape(
         type="line",
         x0=min(x_display) - 0.5, x1=max(x_display) + 0.5,
-        y0=QUALITY_THRESHOLDS['strength_min'], 
-        y1=QUALITY_THRESHOLDS['strength_min'],
+        y0=_strength_min, 
+        y1=_strength_min,
         line=dict(color=COLORS['danger'], dash="dot", width=2)
     )
     
     fig.add_annotation(
-        x=max(x_display), y=QUALITY_THRESHOLDS['strength_min'],
-        text=f"Мин: {QUALITY_THRESHOLDS['strength_min']}",
+        x=max(x_display), y=_strength_min,
+        text=f"Мин: {_strength_min}",
         font=dict(color=COLORS['danger'], size=11),
         showarrow=False,
         xanchor='left',
@@ -451,18 +452,20 @@ def create_problem_machines_chart(df, last_n_parties=10):
 
 
 
-def create_quality_scatter(df, party_number=None):
+def create_quality_scatter(df, party_number=None, strength_min=None):
     """Scatter: Нагрузка vs CV - данные выбранной партии"""
     
     # Если партия не указана - берём последнюю
     if party_number is None:
         party_number = df['№ партии'].max()
     
+    _strength_min = strength_min if strength_min is not None else _strength_min
+
     party_data = df[df['№ партии'] == party_number].copy()
     
     # Статус каждой машины
     def get_color(row):
-        s_ok = row['Относительная разрывная нагрузка, сН/текс'] >= QUALITY_THRESHOLDS['strength_min']
+        s_ok = row['Относительная разрывная нагрузка, сН/текс'] >= _strength_min
         c_ok = row['Коэффициент вариации, %'] <= QUALITY_THRESHOLDS['cv_max']
         if s_ok and c_ok:
             return COLORS['success']
@@ -476,16 +479,16 @@ def create_quality_scatter(df, party_number=None):
     
     # Зона нормы (зелёная)
     fig.add_shape(type="rect",
-        x0=QUALITY_THRESHOLDS['strength_min'], x1=350, y0=0, y1=QUALITY_THRESHOLDS['cv_max'],
+        x0=_strength_min, x1=350, y0=0, y1=QUALITY_THRESHOLDS['cv_max'],
         fillcolor="rgba(16, 185, 129, 0.15)", line=dict(width=0), layer="below")
     
     # Зона критично (красная)
     fig.add_shape(type="rect",
-        x0=200, x1=QUALITY_THRESHOLDS['strength_min'], y0=QUALITY_THRESHOLDS['cv_max'], y1=20,
+        x0=200, x1=_strength_min, y0=QUALITY_THRESHOLDS['cv_max'], y1=20,
         fillcolor="rgba(239, 68, 68, 0.15)", line=dict(width=0), layer="below")
     
     # Пороговые линии
-    fig.add_vline(x=QUALITY_THRESHOLDS['strength_min'], line=dict(color=COLORS['danger'], dash='dash', width=1.5))
+    fig.add_vline(x=_strength_min, line=dict(color=COLORS['danger'], dash='dash', width=1.5))
     fig.add_hline(y=QUALITY_THRESHOLDS['cv_max'], line=dict(color=COLORS['danger'], dash='dash', width=1.5))
     
     # Точки машин

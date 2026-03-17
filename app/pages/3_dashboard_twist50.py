@@ -175,7 +175,7 @@ def main():
                 trend_speed_col = col
                 break
 
-        trend_fig = create_trend_chart(last_10_parties, df=df, speed_col=trend_speed_col)
+        trend_fig = create_trend_chart(last_10_parties, df=df, speed_col=trend_speed_col, strength_min=QUALITY_THRESHOLDS["strength_min"])
         st.plotly_chart(trend_fig, use_container_width=True, config={'displayModeBar': False})
 
         st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
@@ -220,7 +220,7 @@ def main():
         )
         selected_party = all_parties[selected_idx]
 
-        scatter_chart = create_quality_scatter(df, selected_party)
+        scatter_chart = create_quality_scatter(df, selected_party, strength_min=QUALITY_THRESHOLDS["strength_min"])
         st.plotly_chart(scatter_chart, use_container_width=True, config={'displayModeBar': False})
 
         st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
