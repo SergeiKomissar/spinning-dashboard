@@ -17,4 +17,4 @@ echo "Установка зависимостей..."
 pip install -r requirements.txt
 
 echo "Запуск Streamlit..."
-streamlit run app/Дашборд_нити_с_круткой_100_крм.py
+streamlit run app/dashboard.py

@@ -1,5 +1,5 @@
 [[pages]]
-path = "app/Дашборд_нити_с_круткой_100_крм.py"
+path = "app/dashboard.py"
 name = "Отчёт"
 icon = "📊"
 
