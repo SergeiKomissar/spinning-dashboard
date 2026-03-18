@@ -9,7 +9,7 @@ from utils.auth import is_admin, get_visit_stats, logout_button
 from utils.constants import COLORS
 
 st.set_page_config(
-    page_title="Статистика посещений | Админ",
+    page_title="Статистика для администратора",
     page_icon="📊",
     layout="wide"
 )

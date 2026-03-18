@@ -7,7 +7,7 @@ from datetime import datetime
 
 # Конфигурация страницы - должна быть первой командой Streamlit
 st.set_page_config(
-    page_title="Отчёт | Нить 50 кр/м",
+    page_title="Дашборд | Нить 50 кр/м",
     page_icon="🏭",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -56,7 +56,7 @@ def main():
         st.sidebar.markdown("### Навигация")
         st.sidebar.page_link("dashboard.py", label="Отчёт", icon="📋")
         st.sidebar.markdown("### Админ-панель")
-        st.sidebar.page_link("pages/1_admin_stats.py", label="Статистика посещений")
+        st.sidebar.page_link("pages/5_Статистика_для_администратора.py", label="Статистика посещений")
 
 
     # Загружаем данные
