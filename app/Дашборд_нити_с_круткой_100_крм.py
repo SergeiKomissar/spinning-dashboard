@@ -53,7 +53,7 @@ def main():
     # Ссылка на статистику для админа
     if is_admin():
         st.sidebar.markdown("### Навигация")
-        st.sidebar.page_link("dashboard.py", label="Отчёт", icon="📋")
+        st.sidebar.page_link("Дашборд_нити_с_круткой_100_крм.py", label="Отчёт", icon="📋")
         st.sidebar.markdown("### Админ-панель")
         st.sidebar.page_link("pages/5_Статистика_для_администратора.py", label="Статистика посещений")
 

@@ -11,7 +11,7 @@ echo ""
 echo "Для остановки нажмите Ctrl+C"
 echo ""
 
-streamlit run app/dashboard.py \
+streamlit run app/Дашборд_нити_с_круткой_100_крм.py \
     --server.port 8501 \
     --server.address 0.0.0.0 \
     --server.headless true \

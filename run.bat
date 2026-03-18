@@ -7,5 +7,5 @@ if errorlevel 1 (
     exit /b 1
 )
 echo Starting Streamlit Dashboard...
-streamlit run app/dashboard.py
+streamlit run app/Дашборд_нити_с_круткой_100_крм.py
 pause 
