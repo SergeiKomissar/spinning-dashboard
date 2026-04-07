@@ -151,7 +151,7 @@ def main():
         bar_cols = st.columns(3)
         with bar_cols[0]:
             good_s = metrics['total_machines'] - metrics['low_strength_count']
-            st.markdown(progress_bar("Разрывная нагрузка, сН/текс", metrics['avg_strength'], 200, 350, 250, 'greater', good_s, metrics['total_machines']), unsafe_allow_html=True)
+            st.markdown(progress_bar("Разрывная нагрузка, сН/текс", metrics['avg_strength'], 200, 350, 260, 'greater', good_s, metrics['total_machines']), unsafe_allow_html=True)
         with bar_cols[1]:
             good_c = metrics['total_machines'] - metrics['high_cv_count']
             st.markdown(progress_bar("Коэф. вариации, %", metrics['avg_cv'], 0, 15, 9.0, 'less', good_c, metrics['total_machines']), unsafe_allow_html=True)
@@ -364,11 +364,11 @@ def main():
 
         # Функции для цветовой раскраски
         def get_strength_color(val):
-            if val < 240:
+            if val < 250:
                 return '#ef4444'  # красный
-            elif val < 250:
-                return '#f97316'  # оранжевый
             elif val < 260:
+                return '#f97316'  # оранжевый
+            elif val < 270:
                 return '#eab308'  # жёлтый
             else:
                 return '#22c55e'  # зелёный
@@ -426,8 +426,8 @@ def main():
                             marker=dict(size=10, color=colors),
                             text=[f"{v:.1f}" for v in strength_vals], textposition='top center',
                             textfont=dict(size=10, color=COLORS['text']), name='Значение'))
-                        fig.add_hline(y=250, line=dict(color=COLORS['danger'], width=2, dash='dash'),
-                            annotation_text="Мин: 250", annotation_position="right")
+                        fig.add_hline(y=260, line=dict(color=COLORS['danger'], width=2, dash='dash'),
+                            annotation_text="Мин: 260", annotation_position="right")
                         fig.add_hline(y=mean_s, line=dict(color=COLORS['success'], width=2),
                             annotation_text=f"Ср: {mean_s:.1f}", annotation_position="right")
                         fig.update_layout(title='Разрывная нагрузка, сН/текс', height=300,
