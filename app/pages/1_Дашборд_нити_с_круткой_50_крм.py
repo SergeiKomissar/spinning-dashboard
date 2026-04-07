@@ -182,7 +182,7 @@ def main():
                 break
 
         trend_fig = create_trend_chart(last_10_parties, df=df, speed_col=trend_speed_col, strength_min=QUALITY_THRESHOLDS["strength_min"])
-        st.plotly_chart(trend_fig, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(trend_fig, use_container_width=True, config={'displayModeBar': False}, key='twist50_trend')
 
         st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
 
@@ -201,7 +201,7 @@ def main():
         """, unsafe_allow_html=True)
 
         problem_chart = create_problem_machines_chart(df, last_n_parties=10, strength_min=QUALITY_THRESHOLDS['strength_min'])
-        st.plotly_chart(problem_chart, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(problem_chart, use_container_width=True, config={'displayModeBar': False}, key='twist50_problem')
 
         st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
 
@@ -227,7 +227,7 @@ def main():
         selected_party = all_parties[selected_idx]
 
         scatter_chart = create_quality_scatter(df, selected_party, strength_min=QUALITY_THRESHOLDS["strength_min"])
-        st.plotly_chart(scatter_chart, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(scatter_chart, use_container_width=True, config={'displayModeBar': False}, key='twist50_scatter')
 
         st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
 
@@ -436,7 +436,7 @@ def main():
                                 tickfont=dict(color=COLORS['text_secondary'])),
                             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                             font=dict(color=COLORS['text']), showlegend=False, margin=dict(t=40,b=40,l=40,r=60))
-                        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+                        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False}, key=f"twist50_strength_m{int(machine)}")
 
                 # Коэф. вариации - детально
                 with detail_cols[1]:
@@ -460,7 +460,7 @@ def main():
                             yaxis=dict(range=[0, max(max(cv_vals)+3, 12)], tickfont=dict(color=COLORS['text_secondary'])),
                             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                             font=dict(color=COLORS['text']), showlegend=False, margin=dict(t=40,b=40,l=40,r=60))
-                        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+                        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False}, key=f"twist50_cv_m{int(machine)}")
 
             # Компактная строка с цветными цифрами
             cols = st.columns([1, 3, 3])
