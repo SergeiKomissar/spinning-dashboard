@@ -488,9 +488,8 @@ def main():
     if 'Крутка' in df.columns:
         df = df[df['Крутка'] == 50].copy()
 
-    # Offset для крутки 50: первая партия = 1
-    twist50_first_party = int(sorted(df['№ партии'].dropna().unique())[0])
-    twist50_offset = twist50_first_party - 1
+    # Offset для крутки 50: партия 800 в таблице = партия 1
+    twist50_offset = 799
 
     st.markdown("""
         <div class="info-block">

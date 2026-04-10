@@ -90,9 +90,8 @@ def main():
             st.warning("Нет данных о номерах партий")
             return
 
-        # Offset для крутки 50: первая партия = 1
-        twist50_first_party = int(sorted(df['№ партии'].dropna().unique())[0])
-        twist50_offset = twist50_first_party - 1
+        # Offset для крутки 50: партия 800 в таблице = партия 1
+        twist50_offset = 799
 
         last_party = last_party_series.max()
         last_party_data = df[df['№ партии'] == last_party]
