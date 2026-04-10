@@ -488,8 +488,8 @@ def main():
     if 'Крутка' in df.columns:
         df = df[df['Крутка'] == 50].copy()
 
-    # Offset для крутки 50: партия 800 в таблице = партия 1
-    twist50_offset = 799
+    # Offset для крутки 50: последняя партия на 10.04.2026 = №64
+    twist50_offset = 845
 
     st.markdown("""
         <div class="info-block">

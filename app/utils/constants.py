@@ -36,7 +36,7 @@ QUALITY_THRESHOLDS = {
 # Пороговые значения для нити с круткой 50 кр/м
 QUALITY_THRESHOLDS_50 = {
     'strength_min': 260,
-    'cv_max': 9.0,
+    'cv_max': 10.0,
     'density_range': (28.3, 29.5)
 }
 
