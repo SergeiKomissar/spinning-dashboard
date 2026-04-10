@@ -71,7 +71,7 @@ def calc_xbar_r_data(df, metric_col, party_col='№ партии'):
         x_bars.append(party_data.mean())
         ranges.append(party_data.max() - party_data.min())
         stds.append(party_data.std(ddof=1))
-        party_labels.append(int(party) - 714)
+        party_labels.append(int(party) - twist50_offset)
         subgroup_sizes.append(len(party_data))
 
     if len(x_bars) < 3:
@@ -124,7 +124,7 @@ def calc_p_chart_data(df, metric_col, threshold, mode='less', party_col='№ п�
         else:
             defects = (party_data > threshold).sum()
         proportions.append(defects / n)
-        party_labels.append(int(party) - 714)
+        party_labels.append(int(party) - twist50_offset)
         subgroup_sizes.append(n)
 
     if len(proportions) < 3:
@@ -151,7 +151,7 @@ def calc_xmr_data(df, machine_num, metric_col, party_col='№ партии', pm_
     if len(values) < 3:
         return None
 
-    party_labels = [int(p) - 714 for p in parties]
+    party_labels = [int(p) - twist50_offset for p in parties]
     mr = np.abs(np.diff(values))
     x_bar = np.mean(values)
     mr_bar = np.mean(mr)
@@ -487,6 +487,10 @@ def main():
     # Фильтрация по крутке 50
     if 'Крутка' in df.columns:
         df = df[df['Крутка'] == 50].copy()
+
+    # Offset для крутки 50: первая партия = 1
+    twist50_first_party = int(sorted(df['№ партии'].dropna().unique())[0])
+    twist50_offset = twist50_first_party - 1
 
     st.markdown("""
         <div class="info-block">

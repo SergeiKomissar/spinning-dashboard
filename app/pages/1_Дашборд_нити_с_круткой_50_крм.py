@@ -90,11 +90,20 @@ def main():
             st.warning("Нет данных о номерах партий")
             return
 
+        # Offset для крутки 50: первая партия = 1
+        twist50_first_party = int(sorted(df['№ партии'].dropna().unique())[0])
+        twist50_offset = twist50_first_party - 1
+
         last_party = last_party_series.max()
         last_party_data = df[df['№ партии'] == last_party]
 
-        # Заголовок партии
-        render_party_header(last_party)
+        # Заголовок партии (с offset для крутки 50)
+        st.markdown(f'''
+            <div class="party-header">
+                <span>Текущая партия</span>
+                <span class="party-badge">№ {int(last_party) - twist50_offset}</span>
+            </div>
+        ''', unsafe_allow_html=True)
 
         # Расчет метрик
         metrics = calculate_party_metrics(last_party_data, thresholds=QUALITY_THRESHOLDS)
@@ -216,7 +225,7 @@ def main():
 
         # Выбор партии
         all_parties = sorted(df['№ партии'].dropna().unique(), reverse=True)
-        display_parties = [f"Партия {int(p) - 714}" for p in all_parties[:20]]
+        display_parties = [f"Партия {int(p) - twist50_offset}" for p in all_parties[:20]]
 
         selected_idx = st.selectbox(
             "Выберите партию для анализа:",
@@ -418,7 +427,7 @@ def main():
                     if len(strength_vals) > 0:
                         mean_s = np.mean(strength_vals)
                         fig = go.Figure()
-                        party_labels = [int(p) - 714 for p in parties]
+                        party_labels = [int(p) - twist50_offset for p in parties]
                         colors = [get_strength_color(v) for v in strength_vals]
 
                         fig.add_trace(go.Scatter(x=party_labels, y=strength_vals, mode='lines+markers+text',
