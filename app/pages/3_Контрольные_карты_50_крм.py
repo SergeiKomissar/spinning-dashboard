@@ -56,7 +56,7 @@ def get_shewhart_constants(n):
 # ФУНКЦИИ РАСЧЁТА КОНТРОЛЬНЫХ КАРТ
 # ============================================================
 
-def calc_xbar_r_data(df, metric_col, party_col='№ партии'):
+def calc_xbar_r_data(df, metric_col, party_col='№ партии', offset=0):
     parties = sorted(df[party_col].dropna().unique())
     x_bars = []
     ranges = []
@@ -71,7 +71,7 @@ def calc_xbar_r_data(df, metric_col, party_col='№ партии'):
         x_bars.append(party_data.mean())
         ranges.append(party_data.max() - party_data.min())
         stds.append(party_data.std(ddof=1))
-        party_labels.append(int(party) - twist50_offset)
+        party_labels.append(int(party) - offset)
         subgroup_sizes.append(len(party_data))
 
     if len(x_bars) < 3:
@@ -108,7 +108,7 @@ def calc_xbar_r_data(df, metric_col, party_col='№ партии'):
     }
 
 
-def calc_p_chart_data(df, metric_col, threshold, mode='less', party_col='№ партии'):
+def calc_p_chart_data(df, metric_col, threshold, mode='less', party_col='№ партии', offset=0):
     parties = sorted(df[party_col].dropna().unique())
     proportions = []
     party_labels = []
@@ -124,7 +124,7 @@ def calc_p_chart_data(df, metric_col, threshold, mode='less', party_col='№ п�
         else:
             defects = (party_data > threshold).sum()
         proportions.append(defects / n)
-        party_labels.append(int(party) - twist50_offset)
+        party_labels.append(int(party) - offset)
         subgroup_sizes.append(n)
 
     if len(proportions) < 3:
@@ -143,7 +143,7 @@ def calc_p_chart_data(df, metric_col, threshold, mode='less', party_col='№ п�
     }
 
 
-def calc_xmr_data(df, machine_num, metric_col, party_col='№ партии', pm_col='№ ПМ'):
+def calc_xmr_data(df, machine_num, metric_col, party_col='№ партии', pm_col='№ ПМ', offset=0):
     machine_data = df[df[pm_col] == machine_num].sort_values(party_col)
     values = machine_data[metric_col].dropna().values
     parties = machine_data.loc[machine_data[metric_col].notna(), party_col].values
@@ -151,7 +151,7 @@ def calc_xmr_data(df, machine_num, metric_col, party_col='№ партии', pm_
     if len(values) < 3:
         return None
 
-    party_labels = [int(p) - twist50_offset for p in parties]
+    party_labels = [int(p) - offset for p in parties]
     mr = np.abs(np.diff(values))
     x_bar = np.mean(values)
     mr_bar = np.mean(mr)
@@ -523,7 +523,7 @@ def main():
     # ============================================================
     st.markdown('<div class="section-header">X\u0304-R карта: Разрывная нагрузка</div>', unsafe_allow_html=True)
 
-    xbar_r_data = calc_xbar_r_data(df_filtered, strength_col)
+    xbar_r_data = calc_xbar_r_data(df_filtered, strength_col, offset=twist50_offset)
 
     if xbar_r_data:
         signals_xbar = detect_out_of_control(
@@ -584,7 +584,7 @@ def main():
     # ============================================================
     st.markdown('<div class="section-header">X\u0304-S карта: Коэффициент вариации</div>', unsafe_allow_html=True)
 
-    xbar_s_data = calc_xbar_r_data(df_filtered, cv_col)
+    xbar_s_data = calc_xbar_r_data(df_filtered, cv_col, offset=twist50_offset)
 
     if xbar_s_data:
         signals_xbar_cv = detect_out_of_control(
@@ -652,7 +652,8 @@ def main():
     with p_chart_col1:
         p_data_strength = calc_p_chart_data(
             df_filtered, strength_col,
-            threshold=QUALITY_THRESHOLDS['strength_min'], mode='less'
+            threshold=QUALITY_THRESHOLDS['strength_min'], mode='less',
+            offset=twist50_offset
         )
         if p_data_strength:
             fig_p_str, sig_p_str = create_p_chart(
@@ -665,7 +666,8 @@ def main():
     with p_chart_col2:
         p_data_cv = calc_p_chart_data(
             df_filtered, cv_col,
-            threshold=QUALITY_THRESHOLDS['cv_max'], mode='greater'
+            threshold=QUALITY_THRESHOLDS['cv_max'], mode='greater',
+            offset=twist50_offset
         )
         if p_data_cv:
             fig_p_cv, sig_p_cv = create_p_chart(
@@ -707,7 +709,7 @@ def main():
         )
 
     if selected_machine:
-        xmr_data = calc_xmr_data(df_filtered, selected_machine, xmr_metric)
+        xmr_data = calc_xmr_data(df_filtered, selected_machine, xmr_metric, offset=twist50_offset)
 
         if xmr_data:
             signals_xmr = detect_out_of_control(
