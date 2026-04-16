@@ -186,7 +186,7 @@ def create_heatmap(df, metric_column, title, threshold_config):
     return fig
 
 
-def create_trend_chart(last_10_parties, df=None, speed_col=None, strength_min=None):
+def create_trend_chart(last_10_parties, df=None, speed_col=None, strength_min=None, party_offset=714):
     """Создание графика тенденций с разделением по скоростям"""
     fig = go.Figure()
     
@@ -194,7 +194,7 @@ def create_trend_chart(last_10_parties, df=None, speed_col=None, strength_min=No
     y_values = last_10_parties['Относительная разрывная нагрузка, сН/текс'].values
     
     # Смещённые значения X для отображения (номер партии 2026 года)
-    x_display = x_raw - 714
+    x_display = x_raw - party_offset
 
     if len(x_raw) == 0:
         fig.update_layout(
@@ -226,7 +226,7 @@ def create_trend_chart(last_10_parties, df=None, speed_col=None, strength_min=No
             
             x_s = np.array(grouped.index)
             y_s = grouped.values
-            x_s_display = x_s - 714
+            x_s_display = x_s - party_offset
             
             config = speed_configs.get(int(speed_val), {'name': f'{speed_val}', 'color': '#94a3b8', 'symbol': 'circle'})
             mean_val = np.mean(y_s)
@@ -453,7 +453,7 @@ def create_problem_machines_chart(df, last_n_parties=10, strength_min=None):
 
 
 
-def create_quality_scatter(df, party_number=None, strength_min=None):
+def create_quality_scatter(df, party_number=None, strength_min=None, party_offset=714):
     """Scatter: Нагрузка vs CV - данные выбранной партии"""
     
     # Если партия не указана - берём последнюю
@@ -511,7 +511,7 @@ def create_quality_scatter(df, party_number=None, strength_min=None):
     
     fig.update_layout(
         title=dict(
-            text=f'Карта качества (партия {int(party_number) - 714})',
+            text=f'Карта качества (партия {int(party_number) - party_offset})',
             font=dict(size=16, color=COLORS['text']),
             x=0.5, xanchor='center'
         ),
