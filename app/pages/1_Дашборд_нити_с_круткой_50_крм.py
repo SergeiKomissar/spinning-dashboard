@@ -372,14 +372,12 @@ def main():
 
         # Функции для цветовой раскраски
         def get_strength_color(val):
-            if val < 250:
-                return '#ef4444'  # красный
-            elif val < 260:
-                return '#f97316'  # оранжевый
-            elif val < 270:
-                return '#eab308'  # жёлтый
+            if val < 260:
+                return '#ef4444'  # красный — ниже нормы
+            elif val < 265:
+                return '#f97316'  # оранжевый — пограничная зона
             else:
-                return '#22c55e'  # зелёный
+                return '#22c55e'  # зелёный — в норме
 
         def get_cv_color(val):
             if val < 7:
