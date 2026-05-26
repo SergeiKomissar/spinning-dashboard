@@ -53,10 +53,18 @@ def load_data():
             client = gspread.authorize(credentials)
             sheet = client.open_by_key(sheet_id).sheet1
             
-            # Получаем и обрабатываем данные
-            # UNFORMATTED_VALUE — сырые числа без форматирования (без разделителей тысяч)
-            data = sheet.get_all_records(value_render_option='UNFORMATTED_VALUE')
-            df = pd.DataFrame(data)
+            # Получаем данные через get_all_values (надёжнее get_all_records для больших таблиц)
+            # UNFORMATTED_VALUE — сырые числа без разделителей тысяч (проблема с партиями >999)
+            all_values = sheet.get_all_values(value_render_option='UNFORMATTED_VALUE')
+            if len(all_values) < 2:
+                st.error("Таблица пуста")
+                return None
+            headers = all_values[0]
+            rows = all_values[1:]
+            df = pd.DataFrame(rows, columns=headers)
+            
+            # Убираем полностью пустые строки
+            df = df.replace('', pd.NA).dropna(how='all')
             
             # Проверяем, что таблица не пуста
             if len(df.columns) == 0:
