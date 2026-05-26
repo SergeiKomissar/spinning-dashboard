@@ -54,7 +54,8 @@ def load_data():
             sheet = client.open_by_key(sheet_id).sheet1
             
             # Получаем и обрабатываем данные
-            data = sheet.get_all_records()
+            # UNFORMATTED_VALUE — сырые числа без форматирования (без разделителей тысяч)
+            data = sheet.get_all_records(value_render_option='UNFORMATTED_VALUE')
             df = pd.DataFrame(data)
             
             # Проверяем, что таблица не пуста
