@@ -155,6 +155,15 @@ def main():
     if is_admin():
         with st.expander("Факты диагностики (что передаётся нейросети)"):
             st.code(json.dumps(facts, ensure_ascii=False, indent=2, default=str), language='json')
+        with st.expander("Справочник производства (что подгружается к фактам)"):
+            from utils import domain_knowledge
+            st.markdown(
+                f"<span style='color:{COLORS['text_secondary']};font-size:13px;'>"
+                "Справочник редактируется в Google Таблице «СтатПряд2025», лист <b>«Справочник»</b> — "
+                "правьте текст в колонке C, изменения подхватываются в течение 10 минут. "
+                "Пустая ячейка отключает блок. Колонку A (ключи) не менять.</span>",
+                unsafe_allow_html=True)
+            st.code(domain_knowledge.select_knowledge(facts))
 
     st.markdown(f"""
         <div style="text-align: center; margin-top: 40px; padding: 20px; color: {COLORS['text_secondary']};">
