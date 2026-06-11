@@ -265,6 +265,14 @@ def get_api_key():
     try:
         if 'OPENROUTER_API_KEY' in st.secrets:
             return st.secrets['OPENROUTER_API_KEY']
+        # Частая ошибка: ключ вставлен внутрь секции [gcp_service_account]
+        for section in st.secrets:
+            try:
+                val = st.secrets[section]
+                if hasattr(val, 'get') and val.get('OPENROUTER_API_KEY'):
+                    return val['OPENROUTER_API_KEY']
+            except Exception:
+                continue
     except Exception:
         pass
     return os.getenv('OPENROUTER_API_KEY')
