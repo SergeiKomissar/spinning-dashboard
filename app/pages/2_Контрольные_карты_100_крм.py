@@ -447,6 +447,8 @@ def main():
     st.sidebar.markdown("### Дашборды")
     st.sidebar.page_link("dashboard.py", label="Нить с круткой 100 кр/м", icon="🏭")
     st.sidebar.page_link("pages/1_Дашборд_нити_с_круткой_50_крм.py", label="Нить с круткой 50 кр/м", icon="🧵")
+    st.sidebar.markdown("### Аналитика")
+    st.sidebar.page_link("pages/6_Резюме_технолога.py", label="Резюме технолога", icon="🤖")
     st.sidebar.markdown("### Контрольные карты")
     st.sidebar.page_link("pages/2_Контрольные_карты_100_крм.py", label="Контрольные карты 100 кр/м", icon="📊")
     st.sidebar.page_link("pages/3_Контрольные_карты_50_крм.py", label="Контрольные карты 50 кр/м", icon="📈")
