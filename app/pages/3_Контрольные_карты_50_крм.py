@@ -450,6 +450,8 @@ def main():
     st.sidebar.markdown("### Контрольные карты")
     st.sidebar.page_link("pages/2_Контрольные_карты_100_крм.py", label="Контрольные карты 100 кр/м", icon="📊")
     st.sidebar.page_link("pages/3_Контрольные_карты_50_крм.py", label="Контрольные карты 50 кр/м", icon="📈")
+    st.sidebar.markdown("### Термообработка")
+    st.sidebar.page_link("pages/4_Анализ_аппаратов_ВТВ.py", label="Анализ аппаратов ВТВ", icon="🔥")
     st.sidebar.markdown("### Администратор")
     st.sidebar.page_link("pages/5_Статистика_для_администратора.py", label="Статистика посещений", icon="👤")
 
@@ -759,6 +761,94 @@ def main():
                     st.markdown(f"**UCL (MR):** {xmr_data['mr_ucl']:.2f}")
         else:
             st.warning(f"Недостаточно данных для машины ПМ {int(selected_machine)}")
+
+    # ============================================================
+    # 5. X-MR КАРТА АППАРАТА ВТВ (отклонение от среднего партии)
+    # ============================================================
+    st.markdown('<div class="section-header">X-MR карта: Аппарат ВТВ</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+        <div class="info-block">
+            <h4>Контроль термообработки</h4>
+            <p>Точка — среднее отклонение прочности от среднего партии для бобин,
+            прошедших через выбранный аппарат. CL около нуля — аппарат работает как остальные;
+            устойчивый уход вниз или выход за границы — разладка термообработки.</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    if '№ ВТВ' in df_filtered.columns:
+        df_vtv = df_filtered.copy()
+        df_vtv['ВТВ'] = pd.to_numeric(df_vtv['№ ВТВ'], errors='coerce')
+        df_vtv = df_vtv[df_vtv['ВТВ'].between(1, 19)]
+        df_vtv['Отклонение'] = df_vtv[strength_col] - df_vtv.groupby('№ партии')[strength_col].transform('mean')
+
+        vtv_nums = sorted(df_vtv['ВТВ'].dropna().unique())
+        if vtv_nums:
+            vtv_cols = st.columns([2, 2, 2])
+            with vtv_cols[0]:
+                selected_vtv_spc = st.selectbox(
+                    "Выберите аппарат:", vtv_nums,
+                    format_func=lambda x: f"ВТВ №{int(x)}", key="spc_vtv_50"
+                )
+
+            sub = df_vtv[df_vtv['ВТВ'] == selected_vtv_spc]
+            by_party = sub.groupby('№ партии')['Отклонение'].agg(['mean', 'count']).reset_index()
+            by_party = by_party[by_party['count'] >= 2].sort_values('№ партии')
+
+            if len(by_party) >= 5:
+                values = by_party['mean'].values
+                party_labels = [int(p) - twist50_offset for p in by_party['№ партии']]
+
+                mr = np.abs(np.diff(values))
+                mr_bar = mr.mean()
+                sigma_est = mr_bar / 1.128
+                x_bar = values.mean()
+                x_ucl = x_bar + 2.66 * mr_bar
+                x_lcl = x_bar - 2.66 * mr_bar
+                mr_ucl = 3.267 * mr_bar
+
+                signals_vtv = detect_out_of_control(values, x_bar, x_ucl, x_lcl)
+                render_spc_summary({'x_bars': values}, signals_vtv, f"ВТВ №{int(selected_vtv_spc)} — отклонение прочности")
+
+                vtv_chart_cols = st.columns(2)
+                with vtv_chart_cols[0]:
+                    fig_vx = create_control_chart(
+                        party_labels, list(values),
+                        x_bar, x_ucl, x_lcl,
+                        title=f'X-карта: ВТВ №{int(selected_vtv_spc)}',
+                        y_title='Отклонение, сН/текс', signals=signals_vtv,
+                        sigma=sigma_est
+                    )
+                    fig_vx.add_hline(y=0, line=dict(color=COLORS['text_secondary'], width=1, dash='dot'))
+                    st.plotly_chart(fig_vx, use_container_width=True, config={'displayModeBar': False}, key='spc_vtv_x')
+
+                with vtv_chart_cols[1]:
+                    signals_vmr = detect_out_of_control(list(mr), mr_bar, mr_ucl, 0)
+                    fig_vmr = create_control_chart(
+                        party_labels[1:], list(mr),
+                        mr_bar, mr_ucl, 0,
+                        title=f'MR-карта: ВТВ №{int(selected_vtv_spc)}',
+                        y_title='Скользящий размах', signals=signals_vmr, zone_lines=False
+                    )
+                    st.plotly_chart(fig_vmr, use_container_width=True, config={'displayModeBar': False}, key='spc_vtv_mr')
+
+                with st.expander(f"Параметры карты для ВТВ №{int(selected_vtv_spc)}"):
+                    p_cols = st.columns(3)
+                    with p_cols[0]:
+                        st.markdown(f"**Точек (партий):** {len(values)}")
+                        st.markdown(f"**X\u0304:** {x_bar:+.2f}")
+                    with p_cols[1]:
+                        st.markdown(f"**MR\u0304:** {mr_bar:.2f}")
+                        st.markdown(f"**sigma (MR\u0304/d2):** {sigma_est:.2f}")
+                    with p_cols[2]:
+                        st.markdown(f"**UCL (X):** {x_ucl:+.2f}")
+                        st.markdown(f"**LCL (X):** {x_lcl:+.2f}")
+            else:
+                st.warning(f"Недостаточно партий для ВТВ №{int(selected_vtv_spc)} (нужно минимум 5)")
+        else:
+            st.info("Нет данных с номерами аппаратов ВТВ за выбранный период")
+    else:
+        st.info("В таблице нет колонки '№ ВТВ'")
 
     st.markdown(f"""
         <div style="text-align: center; margin-top: 40px; padding: 20px; color: {COLORS['text_secondary']};">
