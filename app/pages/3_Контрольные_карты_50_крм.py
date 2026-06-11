@@ -796,7 +796,7 @@ def main():
             by_party = by_party[by_party['count'] >= 2].sort_values('№ партии')
 
             if len(by_party) >= 5:
-                values = by_party['mean'].values
+                values = by_party['mean'].round(2).values
                 party_labels = [int(p) - twist50_offset for p in by_party['№ партии']]
 
                 mr = np.abs(np.diff(values))

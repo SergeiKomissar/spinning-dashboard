@@ -192,7 +192,7 @@ def main():
         d = vtv_ok.sort_values('mean_dev')
         colors = [vtv_color(v) for v in d['mean_dev']]
         fig = go.Figure(go.Bar(
-            x=[f"№{v}" for v in d['ВТВ']], y=d['mean_dev'],
+            x=[f"№{v}" for v in d['ВТВ']], y=d['mean_dev'].round(2),
             marker_color=colors,
             text=[f"{v:+.1f}" for v in d['mean_dev']], textposition='outside',
             textfont=dict(size=11, color=COLORS['text']),
@@ -220,7 +220,7 @@ def main():
         avg_fail = (df_f[STRENGTH_COL] < QUALITY_THRESHOLDS['strength_min']).mean() * 100
         colors = [COLORS['danger'] if v > avg_fail * 1.3 else COLORS['warning'] if v > avg_fail else COLORS['success'] for v in d['fail_pct']]
         fig = go.Figure(go.Bar(
-            x=[f"№{v}" for v in d['ВТВ']], y=d['fail_pct'],
+            x=[f"№{v}" for v in d['ВТВ']], y=d['fail_pct'].round(1),
             marker_color=colors,
             text=[f"{v:.1f}%" for v in d['fail_pct']], textposition='outside',
             textfont=dict(size=11, color=COLORS['text']),
@@ -289,7 +289,7 @@ def main():
         fig = go.Figure()
         point_colors = [vtv_color(v) for v in by_party['dev']]
         fig.add_trace(go.Scatter(
-            x=x_labels, y=by_party['dev'], mode='lines+markers',
+            x=x_labels, y=by_party['dev'].round(2), mode='lines+markers',
             line=dict(color=COLORS['grid'], width=1.5),
             marker=dict(size=9, color=point_colors),
             customdata=by_party['n'],
@@ -297,7 +297,7 @@ def main():
             hovertemplate="Партия %{x}<br>Отклонение: %{y:+.2f} сН/текс<br>Бобин: %{customdata}<extra></extra>",
         ))
         fig.add_trace(go.Scatter(
-            x=x_labels, y=rolling, mode='lines',
+            x=x_labels, y=rolling.round(2), mode='lines',
             line=dict(color=COLORS['primary'], width=3),
             name='Скользящее среднее (3 партии)',
             hovertemplate="Партия %{x}<br>Ср. за 3 партии: %{y:+.2f}<extra></extra>",
@@ -344,7 +344,7 @@ def main():
     pivot = pivot.where(counts >= 2)
 
     if not pivot.empty:
-        z = pivot.values
+        z = pivot.round(1).values
         thr = QUALITY_THRESHOLDS['strength_min']
         fig = go.Figure(go.Heatmap(
             z=z,
