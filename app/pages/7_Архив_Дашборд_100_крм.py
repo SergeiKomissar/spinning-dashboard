@@ -57,6 +57,7 @@ def main():
     st.sidebar.page_link("pages/1_Дашборд_нити_с_круткой_50_крм.py", label="Нить с круткой 50 кр/м", icon="🧵")
     st.sidebar.markdown("### Аналитика")
     st.sidebar.page_link("pages/6_Резюме_технолога.py", label="Резюме технолога", icon="🤖")
+    st.sidebar.page_link("pages/8_Паспорт_машин.py", label="Паспорт машин", icon="🩺")
     st.sidebar.markdown("### Контрольные карты")
     st.sidebar.page_link("pages/3_Контрольные_карты_50_крм.py", label="Контрольные карты 50 кр/м", icon="📈")
     st.sidebar.markdown("### Термообработка")
