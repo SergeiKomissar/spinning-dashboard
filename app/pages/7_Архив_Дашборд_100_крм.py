@@ -7,7 +7,7 @@ from datetime import datetime
 
 # Конфигурация страницы - должна быть первой командой Streamlit
 st.set_page_config(
-    page_title="Дашборд | Нить 50 кр/м",
+    page_title="Дашборд | Нить 100 кр/м",
     page_icon="🏭",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -18,7 +18,7 @@ from components.charts import create_gauge_chart, create_trend_chart, create_hea
 from components.metrics import calculate_party_metrics, get_status_indicator, get_quality_score
 from components.layout import render_page_header, render_party_header, render_metrics_section
 from utils.data_processing import load_data
-from utils.constants import QUALITY_THRESHOLDS_50 as QUALITY_THRESHOLDS, COLORS, GAUGE_CONFIG
+from utils.constants import QUALITY_THRESHOLDS, COLORS, GAUGE_CONFIG
 from utils.auth import login_form, logout_button, is_admin
 import pandas as pd
 
@@ -28,7 +28,7 @@ def main():
     if not login_form():
         return
 
-    render_page_header(subtitle='Нить с круткой 50 кр/м')
+    render_page_header(subtitle='Нить с круткой 100 кр/м (архив)')
 
     # Компактная шапка: имя + timestamp + обновить + выход
     header_cols = st.columns([3, 2, 1, 1])
@@ -37,7 +37,7 @@ def main():
     with header_cols[1]:
         st.markdown(f"<span style='color:#64748b;font-size:12px;'>Обновлено: {datetime.now().strftime('%d.%m.%Y %H:%M')}</span>", unsafe_allow_html=True)
     with header_cols[2]:
-        if st.button('Обновить', key="refresh_button_50"):
+        if st.button('Обновить', key="refresh_button"):
             with st.spinner('Обновление...'):
                 load_data.clear()
                 new_data = load_data()
@@ -45,7 +45,6 @@ def main():
                     st.session_state.df = new_data
                     st.success('Данные обновлены!')
                     st.rerun()
-
                 else:
                     st.error('Ошибка обновления')
     with header_cols[3]:
@@ -74,7 +73,7 @@ def main():
     with st.spinner('Загрузка данных...'):
         if 'df' not in st.session_state:
             st.session_state.df = load_data()
-        df = st.session_state.df.copy() if st.session_state.df is not None else None
+        df = st.session_state.df
 
     if df is None:
         st.error("Не удалось загрузить данные. Проверьте подключение к Google Sheets.")
@@ -85,9 +84,9 @@ def main():
             st.warning("Данные отсутствуют")
             return
 
-        # Фильтрация по крутке 50
+        # Фильтрация по крутке 100
         if 'Крутка' in df.columns:
-            df = df[df['Крутка'] == 50].copy()
+            df = df[df['Крутка'] == 100].copy()
 
         # Получаем данные последней партии
         last_party_series = df['№ партии'].dropna()
@@ -95,22 +94,14 @@ def main():
             st.warning("Нет данных о номерах партий")
             return
 
-        # Offset для крутки 50: последняя партия на 10.04.2026 = №64
-        twist50_offset = 845
-
         last_party = last_party_series.max()
         last_party_data = df[df['№ партии'] == last_party]
 
-        # Заголовок партии (с offset для крутки 50)
-        st.markdown(f'''
-            <div class="party-header">
-                <span>Текущая партия</span>
-                <span class="party-badge">№ {int(last_party) - twist50_offset}</span>
-            </div>
-        ''', unsafe_allow_html=True)
+        # Заголовок партии
+        render_party_header(last_party)
 
         # Расчет метрик
-        metrics = calculate_party_metrics(last_party_data, thresholds=QUALITY_THRESHOLDS)
+        metrics = calculate_party_metrics(last_party_data)
 
         # Предыдущая партия для сравнения
         all_parties_sorted = sorted(df['№ партии'].dropna().unique())
@@ -118,10 +109,10 @@ def main():
         if len(all_parties_sorted) >= 2:
             prev_party = all_parties_sorted[-2]
             prev_party_data = df[df['№ партии'] == prev_party]
-            prev_metrics = calculate_party_metrics(prev_party_data, thresholds=QUALITY_THRESHOLDS)
+            prev_metrics = calculate_party_metrics(prev_party_data)
 
         # Секция метрик
-        render_metrics_section(metrics, prev_metrics, strength_min=QUALITY_THRESHOLDS["strength_min"])
+        render_metrics_section(metrics, prev_metrics)
 
         # Alert banner если много отклонений
         total_issues = metrics['low_strength_count'] + metrics['high_cv_count'] + metrics['bad_density_count']
@@ -164,10 +155,10 @@ def main():
         bar_cols = st.columns(3)
         with bar_cols[0]:
             good_s = metrics['total_machines'] - metrics['low_strength_count']
-            st.markdown(progress_bar("Разрывная нагрузка, сН/текс", metrics['avg_strength'], 200, 350, 260, 'greater', good_s, metrics['total_machines']), unsafe_allow_html=True)
+            st.markdown(progress_bar("Разрывная нагрузка, сН/текс", metrics['avg_strength'], 200, 350, 270, 'greater', good_s, metrics['total_machines']), unsafe_allow_html=True)
         with bar_cols[1]:
             good_c = metrics['total_machines'] - metrics['high_cv_count']
-            st.markdown(progress_bar("Коэф. вариации, %", metrics['avg_cv'], 0, 15, 10.0, 'less', good_c, metrics['total_machines']), unsafe_allow_html=True)
+            st.markdown(progress_bar("Коэф. вариации, %", metrics['avg_cv'], 0, 15, 9.0, 'less', good_c, metrics['total_machines']), unsafe_allow_html=True)
         with bar_cols[2]:
             good_d = metrics['total_machines'] - metrics['bad_density_count']
             density_val = metrics['avg_density'] if metrics['avg_density'] > 0 else 28.9
@@ -194,8 +185,8 @@ def main():
                 trend_speed_col = col
                 break
 
-        trend_fig = create_trend_chart(last_10_parties, df=df, speed_col=trend_speed_col, strength_min=QUALITY_THRESHOLDS["strength_min"], party_offset=twist50_offset)
-        st.plotly_chart(trend_fig, use_container_width=True, config={'displayModeBar': False}, key='twist50_trend')
+        trend_fig = create_trend_chart(last_10_parties, df=df, speed_col=trend_speed_col)
+        st.plotly_chart(trend_fig, use_container_width=True, config={'displayModeBar': False})
 
         st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
 
@@ -213,8 +204,8 @@ def main():
             </div>
         """, unsafe_allow_html=True)
 
-        problem_chart = create_problem_machines_chart(df, last_n_parties=10, strength_min=QUALITY_THRESHOLDS['strength_min'])
-        st.plotly_chart(problem_chart, use_container_width=True, config={'displayModeBar': False}, key='twist50_problem')
+        problem_chart = create_problem_machines_chart(df, last_n_parties=10)
+        st.plotly_chart(problem_chart, use_container_width=True, config={'displayModeBar': False})
 
         st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
 
@@ -229,18 +220,18 @@ def main():
 
         # Выбор партии
         all_parties = sorted(df['№ партии'].dropna().unique(), reverse=True)
-        display_parties = [f"Партия {int(p) - twist50_offset}" for p in all_parties[:20]]
+        display_parties = [f"Партия {int(p) - 714}" for p in all_parties[:20]]
 
         selected_idx = st.selectbox(
             "Выберите партию для анализа:",
             range(len(display_parties)),
             format_func=lambda x: display_parties[x],
-            key="party_selector_50"
+            key="party_selector"
         )
         selected_party = all_parties[selected_idx]
 
-        scatter_chart = create_quality_scatter(df, selected_party, strength_min=QUALITY_THRESHOLDS["strength_min"], party_offset=twist50_offset)
-        st.plotly_chart(scatter_chart, use_container_width=True, config={'displayModeBar': False}, key='twist50_scatter')
+        scatter_chart = create_quality_scatter(df, selected_party)
+        st.plotly_chart(scatter_chart, use_container_width=True, config={'displayModeBar': False})
 
         st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
 
@@ -366,6 +357,120 @@ def main():
         else:
             st.warning("Колонка 'Пласт. вытяжка, %' не найдена в данных")
 
+        st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
+
+        # --- ТАБЛИЦА: Сравнение скорости формования ---
+        st.markdown(f"""
+            <div class="info-block">
+                <h4>Сравнение: скорость 16.4 vs 18.8 м/мин</h4>
+                <p>Средние показатели прочности и CV для машин с разной скоростью формования.</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+        # Ищем колонку скорости динамически
+        speed_col = None
+        for col in df.columns:
+            if 'Скорость' in col and 'формования' in col:
+                speed_col = col
+                break
+
+        if speed_col is not None:
+            # Функция для расчёта статистики по скорости
+            def calc_speed_stats(data, speed_val):
+                filtered = data[data[speed_col] == speed_val]
+                if len(filtered) == 0:
+                    return {'strength': '-', 'cv': '-', 'count': 0}
+                return {
+                    'strength': f"{filtered['Относительная разрывная нагрузка, сН/текс'].mean():.1f}",
+                    'cv': f"{filtered['Коэффициент вариации, %'].mean():.1f}",
+                    'count': len(filtered)
+                }
+
+            # Считаем количество машин на каждой скорости (в последней партии)
+            last_party_speed = df[df['№ партии'] == all_parties[-1]]
+            machines_164 = len(last_party_speed[last_party_speed[speed_col] == 164]['№ ПМ'].unique())
+            machines_188 = len(last_party_speed[last_party_speed[speed_col] == 188]['№ ПМ'].unique())
+
+            # Статистика по скоростям
+            speed_stats_1_164 = calc_speed_stats(last_1, 164)
+            speed_stats_1_188 = calc_speed_stats(last_1, 188)
+            speed_stats_3_164 = calc_speed_stats(last_3, 164)
+            speed_stats_3_188 = calc_speed_stats(last_3, 188)
+            speed_stats_10_164 = calc_speed_stats(last_10, 164)
+            speed_stats_10_188 = calc_speed_stats(last_10, 188)
+
+            # Функция для цвета разницы (такая же)
+            def speed_diff_color(val164, val188, metric='strength'):
+                try:
+                    v164 = float(val164)
+                    v188 = float(val188)
+                    diff = v188 - v164
+                    if metric == 'strength':
+                        color = '#22c55e' if diff > 0 else '#ef4444' if diff < 0 else '#94a3b8'
+                    else:  # CV - меньше лучше
+                        color = '#22c55e' if diff < 0 else '#ef4444' if diff > 0 else '#94a3b8'
+                    sign = '+' if diff > 0 else ''
+                    return f"<span style='color:{color};font-weight:bold'>{sign}{diff:.1f}</span>"
+                except:
+                    return '-'
+
+            # HTML таблица для скорости
+            speed_table_html = f"""
+            <table class="compare-table">
+                <tr class="header-row">
+                    <th rowspan="2">Период</th>
+                    <th colspan="3">Разрывная нагрузка, сН/текс</th>
+                    <th colspan="3">Коэф. вариации, %</th>
+                </tr>
+                <tr class="header-row">
+                    <th><span style="color:#f59e0b;font-weight:bold">16.4</span></th>
+                    <th><span style="color:#06b6d4;font-weight:bold">18.8</span></th>
+                    <th>Δ</th>
+                    <th><span style="color:#f59e0b;font-weight:bold">16.4</span></th>
+                    <th><span style="color:#06b6d4;font-weight:bold">18.8</span></th>
+                    <th>Δ</th>
+                </tr>
+                <tr style="background:#1e293b;">
+                    <td colspan="7" style="text-align:left;padding:8px 12px;">
+                        <b>Машин на скорости:</b>
+                        <span style="color:#f59e0b;font-weight:bold">16.4 м/мин — {machines_164} шт.</span> |
+                        <span style="color:#06b6d4;font-weight:bold">18.8 м/мин — {machines_188} шт.</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td><b>Последняя партия</b><br><small>(n: {speed_stats_1_164['count']} / {speed_stats_1_188['count']})</small></td>
+                    <td style="color:#f59e0b;font-weight:bold">{speed_stats_1_164['strength']}</td>
+                    <td style="color:#06b6d4;font-weight:bold">{speed_stats_1_188['strength']}</td>
+                    <td>{speed_diff_color(speed_stats_1_164['strength'], speed_stats_1_188['strength'], 'strength')}</td>
+                    <td style="color:#f59e0b;font-weight:bold">{speed_stats_1_164['cv']}</td>
+                    <td style="color:#06b6d4;font-weight:bold">{speed_stats_1_188['cv']}</td>
+                    <td>{speed_diff_color(speed_stats_1_164['cv'], speed_stats_1_188['cv'], 'cv')}</td>
+                </tr>
+                <tr>
+                    <td><b>3 последние партии</b><br><small>(n: {speed_stats_3_164['count']} / {speed_stats_3_188['count']})</small></td>
+                    <td style="color:#f59e0b;font-weight:bold">{speed_stats_3_164['strength']}</td>
+                    <td style="color:#06b6d4;font-weight:bold">{speed_stats_3_188['strength']}</td>
+                    <td>{speed_diff_color(speed_stats_3_164['strength'], speed_stats_3_188['strength'], 'strength')}</td>
+                    <td style="color:#f59e0b;font-weight:bold">{speed_stats_3_164['cv']}</td>
+                    <td style="color:#06b6d4;font-weight:bold">{speed_stats_3_188['cv']}</td>
+                    <td>{speed_diff_color(speed_stats_3_164['cv'], speed_stats_3_188['cv'], 'cv')}</td>
+                </tr>
+                <tr>
+                    <td><b>10 последних партий</b><br><small>(n: {speed_stats_10_164['count']} / {speed_stats_10_188['count']})</small></td>
+                    <td style="color:#f59e0b;font-weight:bold">{speed_stats_10_164['strength']}</td>
+                    <td style="color:#06b6d4;font-weight:bold">{speed_stats_10_188['strength']}</td>
+                    <td>{speed_diff_color(speed_stats_10_164['strength'], speed_stats_10_188['strength'], 'strength')}</td>
+                    <td style="color:#f59e0b;font-weight:bold">{speed_stats_10_164['cv']}</td>
+                    <td style="color:#06b6d4;font-weight:bold">{speed_stats_10_188['cv']}</td>
+                    <td>{speed_diff_color(speed_stats_10_164['cv'], speed_stats_10_188['cv'], 'cv')}</td>
+                </tr>
+            </table>
+            """
+            st.markdown(speed_table_html, unsafe_allow_html=True)
+        else:
+            st.warning("Колонка 'Скорость формования, м/мин' не найдена в данных")
+
+        st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
 
         # === РЕЗУЛЬТАТЫ ПО МАШИНАМ ===
         st.markdown(f"""
@@ -378,16 +483,18 @@ def main():
         # Функции для цветовой раскраски
         def get_strength_color(val):
             if val < 260:
-                return '#ef4444'  # красный — ниже нормы
-            elif val < 265:
-                return '#f97316'  # оранжевый — пограничная зона
+                return '#ef4444'  # красный
+            elif val < 270:
+                return '#f97316'  # оранжевый
+            elif val < 280:
+                return '#eab308'  # жёлтый
             else:
-                return '#22c55e'  # зелёный — в норме
+                return '#22c55e'  # зелёный
 
         def get_cv_color(val):
-            if val < 7:
+            if val < 6:
                 return '#22c55e'  # зелёный
-            elif val < 10:
+            elif val < 9:
                 return '#f97316'  # оранжевый
             else:
                 return '#ef4444'  # красный
@@ -429,7 +536,7 @@ def main():
                     if len(strength_vals) > 0:
                         mean_s = np.mean(strength_vals)
                         fig = go.Figure()
-                        party_labels = [int(p) - twist50_offset for p in parties]
+                        party_labels = [int(p) - 714 for p in parties]
                         colors = [get_strength_color(v) for v in strength_vals]
 
                         fig.add_trace(go.Scatter(x=party_labels, y=strength_vals, mode='lines+markers+text',
@@ -437,17 +544,17 @@ def main():
                             marker=dict(size=10, color=colors),
                             text=[f"{v:.1f}" for v in strength_vals], textposition='top center',
                             textfont=dict(size=10, color=COLORS['text']), name='Значение'))
-                        fig.add_hline(y=260, line=dict(color=COLORS['danger'], width=2, dash='dash'),
-                            annotation_text="Мин: 260", annotation_position="right")
+                        fig.add_hline(y=270, line=dict(color=COLORS['danger'], width=2, dash='dash'),
+                            annotation_text="Мин: 270", annotation_position="right")
                         fig.add_hline(y=mean_s, line=dict(color=COLORS['success'], width=2),
                             annotation_text=f"Ср: {mean_s:.1f}", annotation_position="right")
                         fig.update_layout(title='Разрывная нагрузка, сН/текс', height=300,
                             xaxis=dict(title='Партия', tickfont=dict(color=COLORS['text_secondary'])),
-                            yaxis=dict(range=[min(min(strength_vals)-10, 230), max(max(strength_vals)+15, 280)],
+                            yaxis=dict(range=[min(min(strength_vals)-10, 250), max(max(strength_vals)+15, 300)],
                                 tickfont=dict(color=COLORS['text_secondary'])),
                             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                             font=dict(color=COLORS['text']), showlegend=False, margin=dict(t=40,b=40,l=40,r=60))
-                        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False}, key=f"twist50_strength_m{int(machine)}")
+                        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
                 # Коэф. вариации - детально
                 with detail_cols[1]:
@@ -462,8 +569,8 @@ def main():
                             marker=dict(size=10, color=colors),
                             text=[f"{v:.1f}" for v in cv_vals], textposition='top center',
                             textfont=dict(size=10, color=COLORS['text']), name='Значение'))
-                        fig.add_hline(y=10, line=dict(color=COLORS['danger'], width=2, dash='dash'),
-                            annotation_text="Макс: 10", annotation_position="right")
+                        fig.add_hline(y=9, line=dict(color=COLORS['danger'], width=2, dash='dash'),
+                            annotation_text="Макс: 9", annotation_position="right")
                         fig.add_hline(y=mean_c, line=dict(color=COLORS['success'], width=2),
                             annotation_text=f"Ср: {mean_c:.1f}", annotation_position="right")
                         fig.update_layout(title='Коэф. вариации, %', height=300,
@@ -471,7 +578,7 @@ def main():
                             yaxis=dict(range=[0, max(max(cv_vals)+3, 12)], tickfont=dict(color=COLORS['text_secondary'])),
                             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                             font=dict(color=COLORS['text']), showlegend=False, margin=dict(t=40,b=40,l=40,r=60))
-                        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False}, key=f"twist50_cv_m{int(machine)}")
+                        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
             # Компактная строка с цветными цифрами
             cols = st.columns([1, 3, 3])

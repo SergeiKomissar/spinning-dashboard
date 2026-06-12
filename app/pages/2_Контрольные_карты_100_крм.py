@@ -444,16 +444,17 @@ def main():
 
     # --- Кастомная навигация с русскими названиями ---
     st.markdown("""<style>[data-testid="stSidebarNav"] {display: none;}</style>""", unsafe_allow_html=True)
-    st.sidebar.markdown("### Дашборды")
-    st.sidebar.page_link("dashboard.py", label="Нить с круткой 100 кр/м", icon="🏭")
+    st.sidebar.markdown("### Дашборд")
     st.sidebar.page_link("pages/1_Дашборд_нити_с_круткой_50_крм.py", label="Нить с круткой 50 кр/м", icon="🧵")
     st.sidebar.markdown("### Аналитика")
     st.sidebar.page_link("pages/6_Резюме_технолога.py", label="Резюме технолога", icon="🤖")
     st.sidebar.markdown("### Контрольные карты")
-    st.sidebar.page_link("pages/2_Контрольные_карты_100_крм.py", label="Контрольные карты 100 кр/м", icon="📊")
     st.sidebar.page_link("pages/3_Контрольные_карты_50_крм.py", label="Контрольные карты 50 кр/м", icon="📈")
     st.sidebar.markdown("### Термообработка")
     st.sidebar.page_link("pages/4_Анализ_аппаратов_ВТВ.py", label="Анализ аппаратов ВТВ", icon="🔥")
+    st.sidebar.markdown("### Архив")
+    st.sidebar.page_link("pages/7_Архив_Дашборд_100_крм.py", label="Дашборд нити 100 кр/м", icon="🗄️")
+    st.sidebar.page_link("pages/2_Контрольные_карты_100_крм.py", label="Контрольные карты 100 кр/м", icon="🗄️")
     st.sidebar.markdown("### Администратор")
     st.sidebar.page_link("pages/5_Статистика_для_администратора.py", label="Статистика посещений", icon="👤")
 
