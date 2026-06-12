@@ -117,9 +117,15 @@ def main():
     else:
         cached = ai_summary.get_cached(party_disp, model, fhash)
 
+        # Кнопка через callback: клик ставит флаг в session_state и не теряется,
+        # даже если страница в этот момент перезапускалась
+        def _request_regen():
+            st.session_state['ai_force_flag'] = True
+
         regen_cols = st.columns([2, 4])
         with regen_cols[0]:
-            force = st.button("Сгенерировать заново", key="ai_force")
+            st.button("Сгенерировать заново", key="ai_force_btn", on_click=_request_regen)
+        force = st.session_state.get('ai_force_flag', False)
 
         if cached and not force:
             summary, in_t, out_t, cost, created = cached
@@ -146,6 +152,7 @@ def main():
                     st.error(f"Ошибка генерации ({e}). Показана сводка без нейросети.")
                     st.markdown(f'<div class="section-header">Сводка по партии №{party_disp}</div>', unsafe_allow_html=True)
                     st.markdown(ai_summary.render_fallback(facts))
+            st.session_state['ai_force_flag'] = False
 
         spent, n_gen = ai_summary.total_spend()
         st.markdown(
