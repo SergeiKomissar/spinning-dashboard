@@ -168,7 +168,7 @@ def main():
             st.markdown(progress_bar("Разрывная нагрузка, сН/текс", metrics['avg_strength'], 200, 350, 260, 'greater', good_s, metrics['total_machines']), unsafe_allow_html=True)
         with bar_cols[1]:
             good_c = metrics['total_machines'] - metrics['high_cv_count']
-            st.markdown(progress_bar("Коэф. вариации, %", metrics['avg_cv'], 0, 15, 10.0, 'less', good_c, metrics['total_machines']), unsafe_allow_html=True)
+            st.markdown(progress_bar("Коэф. вариации, %", metrics['avg_cv'], 0, 15, 9.0, 'less', good_c, metrics['total_machines']), unsafe_allow_html=True)
         with bar_cols[2]:
             good_d = metrics['total_machines'] - metrics['bad_density_count']
             density_val = metrics['avg_density'] if metrics['avg_density'] > 0 else 28.9
@@ -264,7 +264,7 @@ def main():
         def get_cv_color(val):
             if val < 7:
                 return '#22c55e'  # зелёный
-            elif val < 10:
+            elif val < 9:
                 return '#f97316'  # оранжевый
             else:
                 return '#ef4444'  # красный
@@ -339,8 +339,8 @@ def main():
                             marker=dict(size=10, color=colors),
                             text=[f"{v:.1f}" for v in cv_vals], textposition='top center',
                             textfont=dict(size=10, color=COLORS['text']), name='Значение'))
-                        fig.add_hline(y=10, line=dict(color=COLORS['danger'], width=2, dash='dash'),
-                            annotation_text="Макс: 10", annotation_position="right")
+                        fig.add_hline(y=9, line=dict(color=COLORS['danger'], width=2, dash='dash'),
+                            annotation_text="Макс: 9", annotation_position="right")
                         fig.add_hline(y=mean_c, line=dict(color=COLORS['success'], width=2),
                             annotation_text=f"Ср: {mean_c:.1f}", annotation_position="right")
                         fig.update_layout(title='Коэф. вариации, %', height=300,

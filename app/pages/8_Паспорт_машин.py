@@ -121,10 +121,11 @@ def main():
     disp['Тренд'] = disp['тренд'].map(
         lambda t: "—" if t is None or pd.isna(t) else (f"▼ {t:+.1f}" if t <= -mh.TREND_DELTA else (f"▲ {t:+.1f}" if t >= mh.TREND_DELTA else f"→ {t:+.1f}")))
     disp['Ниже 260'] = disp.apply(lambda r: f"{r['ниже_нормы_шт']} ({r['ниже_нормы_%']}%)", axis=1)
-    disp['CV выше 10'] = disp.apply(lambda r: f"{r['cv_выше_нормы_шт']} ({r['cv_выше_нормы_%']}%)", axis=1)
+    cv_lbl = f"CV выше {QUALITY_THRESHOLDS['cv_max']:.0f}"
+    disp[cv_lbl] = disp.apply(lambda r: f"{r['cv_выше_нормы_шт']} ({r['cv_выше_нормы_%']}%)", axis=1)
 
     table = disp[['Машина', 'Диагноз', 'здоровье', 'партий', 'прочность_средняя',
-                  'откл_от_партии', 'cv_средний', 'Ниже 260', 'CV выше 10', 'Тренд']].rename(columns={
+                  'откл_от_партии', 'cv_средний', 'Ниже 260', cv_lbl, 'Тренд']].rename(columns={
         'здоровье': 'Здоровье',
         'партий': 'Партий',
         'прочность_средняя': 'Прочность ср.',
