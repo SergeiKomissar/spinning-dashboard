@@ -20,6 +20,10 @@ credentials:
       name: Роман Носов
       password: '081981'
       role: user
+    elenaivanova:
+      name: Елена Иванова
+      password: '083630'
+      role: user
 
 cookie:
   expiry_days: 30
