@@ -1,9 +1,75 @@
 import streamlit as st
 import sys
 import os
+from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.constants import COLORS
+from utils import data_processing
+from utils.auth import logout_button
+
+# Боковое меню: (раздел, [(страница, подпись, иконка), ...])
+NAV_SECTIONS = [
+    ("Дашборд", [
+        ("pages/1_Дашборд_нити_с_круткой_50_крм.py", "Нить с круткой 50 кр/м", "🧵"),
+    ]),
+    ("Аналитика", [
+        ("pages/6_Резюме_технолога.py", "Резюме технолога", "🤖"),
+        ("pages/8_Паспорт_машин.py", "Паспорт машин", "🩺"),
+    ]),
+    ("Контрольные карты", [
+        ("pages/3_Контрольные_карты_50_крм.py", "Контрольные карты 50 кр/м", "📈"),
+    ]),
+    ("Термообработка", [
+        ("pages/4_Анализ_аппаратов_ВТВ.py", "Анализ аппаратов ВТВ", "🔥"),
+    ]),
+    ("Архив", [
+        ("pages/7_Архив_Дашборд_100_крм.py", "Дашборд нити 100 кр/м", "🗄️"),
+        ("pages/2_Контрольные_карты_100_крм.py", "Контрольные карты 100 кр/м", "🗄️"),
+    ]),
+    ("Администратор", [
+        ("pages/5_Статистика_для_администратора.py", "Статистика посещений", "👤"),
+    ]),
+]
+
+
+def render_sidebar_nav():
+    """Боковое меню с русскими названиями (стандартная навигация скрыта)."""
+    st.markdown("""<style>[data-testid="stSidebarNav"] {display: none;}</style>""", unsafe_allow_html=True)
+    for section, links in NAV_SECTIONS:
+        st.sidebar.markdown(f"### {section}")
+        for page, label, icon in links:
+            st.sidebar.page_link(page, label=label, icon=icon)
+
+
+def render_top_bar(refresh_key):
+    """Компактная шапка: пользователь, время, кнопки «Обновить» и «Выход»."""
+    header_cols = st.columns([3, 2, 1, 1])
+    with header_cols[0]:
+        st.markdown(f"<span style='color:#94a3b8;font-size:13px;'>Пользователь: <b>{st.session_state.user_info['name']}</b></span>", unsafe_allow_html=True)
+    with header_cols[1]:
+        st.markdown(f"<span style='color:#64748b;font-size:12px;'>Обновлено: {datetime.now().strftime('%d.%m.%Y %H:%M')}</span>", unsafe_allow_html=True)
+    with header_cols[2]:
+        if st.button('Обновить', key=refresh_key):
+            with st.spinner('Обновление...'):
+                data_processing.load_data.clear()
+                new_data = data_processing.load_data()
+                if new_data is not None:
+                    st.session_state.df = new_data
+                    st.rerun()
+                else:
+                    st.error('Ошибка обновления')
+    with header_cols[3]:
+        logout_button()
+
+
+def get_session_df():
+    """Данные из Google Sheets: загружаются один раз за сессию, дальше —
+    копия из session_state (обновление — кнопкой «Обновить»)."""
+    with st.spinner('Загрузка данных...'):
+        if 'df' not in st.session_state:
+            st.session_state.df = data_processing.load_data()
+        return st.session_state.df.copy() if st.session_state.df is not None else None
 
 def inject_custom_css():
     """Внедрение кастомных CSS стилей для корпоративной тёмной темы"""

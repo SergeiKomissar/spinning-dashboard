@@ -5,6 +5,7 @@ from datetime import datetime
 import pandas as pd
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from components.layout import render_sidebar_nav
 from utils.auth import is_admin, get_visit_stats, logout_button
 
 st.set_page_config(
@@ -15,22 +16,7 @@ st.set_page_config(
 
 def main():
 
-    # --- Кастомная навигация с русскими названиями ---
-    st.markdown("""<style>[data-testid="stSidebarNav"] {display: none;}</style>""", unsafe_allow_html=True)
-    st.sidebar.markdown("### Дашборд")
-    st.sidebar.page_link("pages/1_Дашборд_нити_с_круткой_50_крм.py", label="Нить с круткой 50 кр/м", icon="🧵")
-    st.sidebar.markdown("### Аналитика")
-    st.sidebar.page_link("pages/6_Резюме_технолога.py", label="Резюме технолога", icon="🤖")
-    st.sidebar.page_link("pages/8_Паспорт_машин.py", label="Паспорт машин", icon="🩺")
-    st.sidebar.markdown("### Контрольные карты")
-    st.sidebar.page_link("pages/3_Контрольные_карты_50_крм.py", label="Контрольные карты 50 кр/м", icon="📈")
-    st.sidebar.markdown("### Термообработка")
-    st.sidebar.page_link("pages/4_Анализ_аппаратов_ВТВ.py", label="Анализ аппаратов ВТВ", icon="🔥")
-    st.sidebar.markdown("### Архив")
-    st.sidebar.page_link("pages/7_Архив_Дашборд_100_крм.py", label="Дашборд нити 100 кр/м", icon="🗄️")
-    st.sidebar.page_link("pages/2_Контрольные_карты_100_крм.py", label="Контрольные карты 100 кр/м", icon="🗄️")
-    st.sidebar.markdown("### Администратор")
-    st.sidebar.page_link("pages/5_Статистика_для_администратора.py", label="Статистика посещений", icon="👤")
+    render_sidebar_nav()
 
     if not st.session_state.get('authenticated'):
         st.warning("Необходима авторизация. Перейдите на главную страницу.")

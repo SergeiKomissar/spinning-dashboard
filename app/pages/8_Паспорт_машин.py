@@ -3,7 +3,6 @@ import plotly.graph_objects as go
 import pandas as pd
 import sys
 import os
-from datetime import datetime
 
 st.set_page_config(
     page_title="Паспорт машин | Нить 50 кр/м",
@@ -13,10 +12,9 @@ st.set_page_config(
 )
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from components.layout import inject_custom_css
-from utils.data_processing import load_data
+from components.layout import inject_custom_css, render_top_bar, render_sidebar_nav, get_session_df
 from utils.constants import QUALITY_THRESHOLDS_50 as QUALITY_THRESHOLDS, COLORS
-from utils.auth import login_form, logout_button
+from utils.auth import login_form
 from utils import machine_health as mh
 
 
@@ -31,38 +29,11 @@ def main():
         unsafe_allow_html=True
     )
 
-    header_cols = st.columns([3, 2, 1, 1])
-    with header_cols[0]:
-        st.markdown(f"<span style='color:#94a3b8;font-size:13px;'>Пользователь: <b>{st.session_state.user_info['name']}</b></span>", unsafe_allow_html=True)
-    with header_cols[1]:
-        st.markdown(f"<span style='color:#64748b;font-size:12px;'>Обновлено: {datetime.now().strftime('%d.%m.%Y %H:%M')}</span>", unsafe_allow_html=True)
-    with header_cols[2]:
-        if st.button('Обновить', key="mh_refresh"):
-            load_data.clear()
-            st.rerun()
-    with header_cols[3]:
-        logout_button()
+    render_top_bar(refresh_key="mh_refresh")
 
-    st.markdown("""<style>[data-testid="stSidebarNav"] {display: none;}</style>""", unsafe_allow_html=True)
-    st.sidebar.markdown("### Дашборд")
-    st.sidebar.page_link("pages/1_Дашборд_нити_с_круткой_50_крм.py", label="Нить с круткой 50 кр/м", icon="🧵")
-    st.sidebar.markdown("### Аналитика")
-    st.sidebar.page_link("pages/6_Резюме_технолога.py", label="Резюме технолога", icon="🤖")
-    st.sidebar.page_link("pages/8_Паспорт_машин.py", label="Паспорт машин", icon="🩺")
-    st.sidebar.markdown("### Контрольные карты")
-    st.sidebar.page_link("pages/3_Контрольные_карты_50_крм.py", label="Контрольные карты 50 кр/м", icon="📈")
-    st.sidebar.markdown("### Термообработка")
-    st.sidebar.page_link("pages/4_Анализ_аппаратов_ВТВ.py", label="Анализ аппаратов ВТВ", icon="🔥")
-    st.sidebar.markdown("### Архив")
-    st.sidebar.page_link("pages/7_Архив_Дашборд_100_крм.py", label="Дашборд нити 100 кр/м", icon="🗄️")
-    st.sidebar.page_link("pages/2_Контрольные_карты_100_крм.py", label="Контрольные карты 100 кр/м", icon="🗄️")
-    st.sidebar.markdown("### Администратор")
-    st.sidebar.page_link("pages/5_Статистика_для_администратора.py", label="Статистика посещений", icon="👤")
+    render_sidebar_nav()
 
-    with st.spinner('Загрузка данных...'):
-        if 'df' not in st.session_state:
-            st.session_state.df = load_data()
-        df = st.session_state.df.copy() if st.session_state.df is not None else None
+    df = get_session_df()
 
     if df is None or df.empty:
         st.error("Не удалось загрузить данные.")
