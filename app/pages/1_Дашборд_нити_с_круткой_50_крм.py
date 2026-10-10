@@ -16,7 +16,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from components.charts import create_trend_chart, create_problem_machines_chart, create_quality_scatter
 from components.metrics import calculate_party_metrics
 from components.layout import render_page_header, render_metrics_section, render_top_bar, render_sidebar_nav, get_session_df
-from utils.constants import QUALITY_THRESHOLDS_50 as QUALITY_THRESHOLDS, COLORS
+from utils.constants import QUALITY_THRESHOLDS_50 as QUALITY_THRESHOLDS, COLORS, TWIST50_PARTY_OFFSET
 from utils.auth import login_form
 
 
@@ -55,8 +55,7 @@ def main():
             st.warning("Нет данных о номерах партий")
             return
 
-        # Offset для крутки 50: последняя партия на 10.04.2026 = №64
-        twist50_offset = 845
+        twist50_offset = TWIST50_PARTY_OFFSET
 
         last_party = last_party_series.max()
         last_party_data = df[df['№ партии'] == last_party]

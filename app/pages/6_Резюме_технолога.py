@@ -12,7 +12,7 @@ st.set_page_config(
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from components.layout import inject_custom_css, render_top_bar, render_sidebar_nav, get_session_df
-from utils.constants import QUALITY_THRESHOLDS_50 as QUALITY_THRESHOLDS, COLORS
+from utils.constants import QUALITY_THRESHOLDS_50 as QUALITY_THRESHOLDS, COLORS, TWIST50_PARTY_OFFSET
 from utils.auth import login_form, is_admin
 from utils import ai_summary
 
@@ -44,7 +44,7 @@ def main():
         st.warning("Нет данных по крутке 50")
         return
 
-    twist50_offset = 845
+    twist50_offset = TWIST50_PARTY_OFFSET
 
     st.markdown("""
         <div class="info-block">

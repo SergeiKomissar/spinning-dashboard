@@ -16,7 +16,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from components.charts import create_trend_chart, create_problem_machines_chart, create_quality_scatter
 from components.metrics import calculate_party_metrics
 from components.layout import render_page_header, render_party_header, render_metrics_section, render_top_bar, render_sidebar_nav, get_session_df
-from utils.constants import COLORS
+from utils.constants import COLORS, TWIST100_PARTY_OFFSET
 from utils.auth import login_form
 import pandas as pd
 
@@ -182,7 +182,7 @@ def main():
 
         # Выбор партии
         all_parties = sorted(df['№ партии'].dropna().unique(), reverse=True)
-        display_parties = [f"Партия {int(p) - 714}" for p in all_parties[:20]]
+        display_parties = [f"Партия {int(p) - TWIST100_PARTY_OFFSET}" for p in all_parties[:20]]
 
         selected_idx = st.selectbox(
             "Выберите партию для анализа:",
@@ -498,7 +498,7 @@ def main():
                     if len(strength_vals) > 0:
                         mean_s = np.mean(strength_vals)
                         fig = go.Figure()
-                        party_labels = [int(p) - 714 for p in parties]
+                        party_labels = [int(p) - TWIST100_PARTY_OFFSET for p in parties]
                         colors = [get_strength_color(v) for v in strength_vals]
 
                         fig.add_trace(go.Scatter(x=party_labels, y=strength_vals, mode='lines+markers+text',

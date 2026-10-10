@@ -3,11 +3,11 @@ import sys
 import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils.constants import COLORS, CHART_CONFIG, QUALITY_THRESHOLDS
+from utils.constants import COLORS, CHART_CONFIG, QUALITY_THRESHOLDS, TWIST100_PARTY_OFFSET
 import numpy as np
 
 
-def create_trend_chart(last_10_parties, df=None, speed_col=None, strength_min=None, party_offset=714):
+def create_trend_chart(last_10_parties, df=None, speed_col=None, strength_min=None, party_offset=TWIST100_PARTY_OFFSET):
     """Создание графика тенденций с разделением по скоростям"""
     fig = go.Figure()
     
@@ -238,7 +238,7 @@ def create_problem_machines_chart(df, last_n_parties=10, strength_min=None):
 
 
 
-def create_quality_scatter(df, party_number=None, strength_min=None, party_offset=714):
+def create_quality_scatter(df, party_number=None, strength_min=None, party_offset=TWIST100_PARTY_OFFSET):
     """Scatter: Нагрузка vs CV - данные выбранной партии"""
     
     # Если партия не указана - берём последнюю

@@ -40,5 +40,9 @@ QUALITY_THRESHOLDS_50 = {
     'density_range': (28.3, 29.5)
 }
 
+# Смещение номера партии для отображения: показываемый № = номер в таблице − смещение
+TWIST100_PARTY_OFFSET = 714
+TWIST50_PARTY_OFFSET = 845  # последняя партия на 10.04.2026 = №64
+
 # Идентификатор таблицы по умолчанию
 DEFAULT_SHEET_ID = '1S1obWIvuasnedJrKNeOQvJuoT-vrZ7v6EgivXiYsotc'

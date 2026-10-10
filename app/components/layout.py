@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils.constants import COLORS
+from utils.constants import COLORS, TWIST100_PARTY_OFFSET
 from utils import data_processing
 from utils.auth import logout_button
 
@@ -382,7 +382,7 @@ def render_party_header(party_number):
     st.markdown(f'''
         <div class="party-header">
             <span>Текущая партия</span>
-            <span class="party-badge">№ {int(party_number) - 714}</span>
+            <span class="party-badge">№ {int(party_number) - TWIST100_PARTY_OFFSET}</span>
         </div>
     ''', unsafe_allow_html=True)
 
