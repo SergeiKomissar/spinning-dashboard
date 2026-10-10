@@ -50,7 +50,7 @@ def main():
         <div class="info-block">
             <h4>Автоматическая технологическая сводка</h4>
             <p>Статистика считается детерминированно (правила Нельсона, отклонения машин и аппаратов,
-            Cpk, динамика брака), затем нейросеть превращает факты в краткую сводку с приоритетами.
+            Cpk, динамика брака), затем ИИ превращает факты в краткую сводку с приоритетами.
             Сводка генерируется один раз на партию и кэшируется — повторные просмотры бесплатны.</p>
         </div>
     """, unsafe_allow_html=True)
@@ -71,14 +71,14 @@ def main():
     sel_cols = st.columns([3, 2, 2])
     with sel_cols[0]:
         model = st.selectbox(
-            "Модель (тестовый режим — сравните качество):", model_ids,
+            "Уровень анализа:", model_ids,
             format_func=lambda m: ai_summary.MODELS[m]['label'],
             index=model_ids.index(ai_summary.DEFAULT_MODEL), key="ai_model"
         )
 
     if not api_key:
         st.warning(
-            "Ключ OpenRouter не настроен — показана детерминированная сводка без нейросети. "
+            "Ключ OpenRouter не настроен — показана сводка без анализа ИИ. "
             "Добавьте OPENROUTER_API_KEY в Secrets приложения (Streamlit Cloud → App settings → Secrets):\n\n"
             '`OPENROUTER_API_KEY = "sk-or-v1-..."`'
         )
@@ -107,7 +107,7 @@ def main():
                 f"токены: {in_t}+{out_t} | стоимость: ${cost:.4f} | из кэша</span>",
                 unsafe_allow_html=True)
         else:
-            with st.spinner('Нейросеть анализирует партию...'):
+            with st.spinner('ИИ анализирует партию...'):
                 try:
                     summary, in_t, out_t, cost = ai_summary.generate(facts, model)
                     ai_summary.save_summary(party_disp, model, fhash, summary, in_t, out_t, cost)
@@ -119,7 +119,7 @@ def main():
                         f"токены: {in_t}+{out_t} | стоимость: ${cost:.4f}</span>",
                         unsafe_allow_html=True)
                 except Exception as e:
-                    st.error(f"Ошибка генерации ({e}). Показана сводка без нейросети.")
+                    st.error(f"Ошибка генерации ({e}). Показана сводка без анализа ИИ.")
                     st.markdown(f'<div class="section-header">Сводка по партии №{party_disp}</div>', unsafe_allow_html=True)
                     st.markdown(ai_summary.render_fallback(facts))
             st.session_state['ai_force_flag'] = False
@@ -130,9 +130,9 @@ def main():
             f"Всего сгенерировано сводок: {n_gen} | суммарно потрачено: ${spent:.3f}</span>",
             unsafe_allow_html=True)
 
-    # --- Тестовый режим: что видит нейросеть ---
+    # --- Для администратора: что видит ИИ ---
     if is_admin():
-        with st.expander("Факты диагностики (что передаётся нейросети)"):
+        with st.expander("Факты диагностики (что передаётся ИИ)"):
             st.code(json.dumps(facts, ensure_ascii=False, indent=2, default=str), language='json')
         with st.expander("Справочник производства (что подгружается к фактам)"):
             from utils import domain_knowledge
