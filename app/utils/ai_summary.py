@@ -29,10 +29,10 @@ DB_PATH = Path(__file__).parent.parent.parent / 'data' / 'summaries.db'
 # Порядок = порядок в списке выбора; label — то, что видит пользователь
 MODELS = {
     'google/gemini-2.5-flash': {'label': 'Анализ ИИ (начальный)', 'in': 0.30, 'out': 2.50},
-    'anthropic/claude-haiku-4.5': {'label': 'Анализ ИИ (средний)', 'in': 1.0, 'out': 5.0},
-    'anthropic/claude-sonnet-4.6': {'label': 'Анализ ИИ (продвинутый)', 'in': 3.0, 'out': 15.0},
+    'anthropic/claude-haiku-5.5': {'label': 'Анализ ИИ (средний)', 'in': 0.10, 'out': 0.50},
+    'anthropic/claude-sonnet-5.5': {'label': 'Анализ ИИ (продвинутый)', 'in': 2.0, 'out': 10.0},
 }
-DEFAULT_MODEL = 'anthropic/claude-haiku-4.5'
+DEFAULT_MODEL = 'anthropic/claude-haiku-5.5'
 
 SYSTEM_PROMPT = """Ты — главный технолог прядильного производства арамидной нити.
 Тебе передают структурированные факты диагностики последней партии термообработанной нити
