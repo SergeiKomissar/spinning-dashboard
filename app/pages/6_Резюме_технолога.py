@@ -66,15 +66,7 @@ def main():
     fhash = ai_summary.facts_hash(facts)
     api_key = ai_summary.get_api_key()
 
-    # --- Выбор модели (тестовый режим) ---
-    model_ids = list(ai_summary.MODELS.keys())
-    sel_cols = st.columns([3, 2, 2])
-    with sel_cols[0]:
-        model = st.selectbox(
-            "Уровень анализа:", model_ids,
-            format_func=lambda m: ai_summary.MODELS[m]['label'],
-            index=model_ids.index(ai_summary.DEFAULT_MODEL), key="ai_model"
-        )
+    model = ai_summary.DEFAULT_MODEL
 
     if not api_key:
         st.warning(

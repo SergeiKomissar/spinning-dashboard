@@ -25,12 +25,9 @@ DENSITY_COL = 'Линейная плотность, текс'
 
 DB_PATH = Path(__file__).parent.parent.parent / 'data' / 'summaries.db'
 
-# Модели OpenRouter: (id, цена $/1M входных, $/1M выходных) — для оценки стоимости
-# Порядок = порядок в списке выбора; label — то, что видит пользователь
+# Модель OpenRouter: label — то, что видит пользователь; цены $/1M токенов (вход/выход) — для оценки стоимости
 MODELS = {
-    'google/gemini-2.5-flash': {'label': 'Анализ ИИ (начальный)', 'in': 0.30, 'out': 2.50},
-    'anthropic/claude-haiku-5.5': {'label': 'Анализ ИИ (средний)', 'in': 0.10, 'out': 0.50},
-    'anthropic/claude-sonnet-5.5': {'label': 'Анализ ИИ (продвинутый)', 'in': 2.0, 'out': 10.0},
+    'anthropic/claude-haiku-5.5': {'label': 'Анализ ИИ', 'in': 0.10, 'out': 0.50},
 }
 DEFAULT_MODEL = 'anthropic/claude-haiku-5.5'
 
