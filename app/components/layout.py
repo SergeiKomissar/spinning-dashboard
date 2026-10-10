@@ -5,7 +5,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.constants import COLORS, TWIST100_PARTY_OFFSET
 from utils import data_processing
-from utils.auth import logout_button
+from utils.auth import logout_button, is_admin
 
 # Боковое меню: (раздел, [(страница, подпись, иконка), ...])
 NAV_SECTIONS = [
@@ -32,10 +32,16 @@ NAV_SECTIONS = [
 ]
 
 
+# Разделы меню, которые видит только администратор
+ADMIN_SECTIONS = {"Администратор"}
+
+
 def render_sidebar_nav():
     """Боковое меню с русскими названиями (стандартная навигация скрыта)."""
     st.markdown("""<style>[data-testid="stSidebarNav"] {display: none;}</style>""", unsafe_allow_html=True)
     for section, links in NAV_SECTIONS:
+        if section in ADMIN_SECTIONS and not is_admin():
+            continue
         st.sidebar.markdown(f"### {section}")
         for page, label, icon in links:
             st.sidebar.page_link(page, label=label, icon=icon)
@@ -152,6 +158,7 @@ def inject_custom_css():
             font-size: 14px;
             transition: all 0.2s ease;
             box-shadow: none;
+            white-space: nowrap;  /* «Обновить»/«Выход» не переносятся по слогам */
         }}
 
         .stButton > button:hover {{

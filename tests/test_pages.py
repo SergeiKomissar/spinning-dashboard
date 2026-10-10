@@ -79,3 +79,12 @@ def test_main_dashboard_builds_charts_only_for_selected_machine(results):
     tree = results[os.path.basename(PAGES[0])]['default']
     assert not [e for e in tree if e['t'] == 'Expander']
     assert sum(1 for e in tree if e['t'] == 'UnknownElement') <= 6
+
+
+def test_admin_menu_hidden_for_regular_user(results):
+    def sidebar_text(tree):
+        return ' '.join(e['p'].get('body', '') for e in tree if e['t'] == 'Markdown')
+    user_tree = results[os.path.basename(PAGES[0]) + '#user']['default']
+    admin_tree = results[os.path.basename(PAGES[0])]['default']
+    assert 'Статистика посещений' not in sidebar_text(user_tree)
+    assert 'Статистика посещений' in sidebar_text(admin_tree)

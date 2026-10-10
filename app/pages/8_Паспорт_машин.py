@@ -113,6 +113,10 @@ def main():
             'Здоровье': st.column_config.ProgressColumn(
                 'Здоровье', min_value=0, max_value=100, format='%.0f'),
             'Откл. от партии': st.column_config.NumberColumn(format='%+.2f'),
+            # Единый формат чисел (раньше: 258 рядом с 257.7, 8 рядом с 8.1)
+            'Прочность ср.': st.column_config.NumberColumn(format='%.1f'),
+            'CV ср.': st.column_config.NumberColumn(format='%.1f'),
+            'Диагноз': st.column_config.TextColumn(width='medium'),
         },
     )
 

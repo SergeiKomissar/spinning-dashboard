@@ -5,6 +5,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.constants import COLORS, CHART_CONFIG, QUALITY_THRESHOLDS, TWIST100_PARTY_OFFSET
 import numpy as np
+import pandas as pd
 
 
 def create_trend_chart(last_10_parties, df=None, speed_col=None, strength_min=None, party_offset=TWIST100_PARTY_OFFSET):
@@ -30,38 +31,42 @@ def create_trend_chart(last_10_parties, df=None, speed_col=None, strength_min=No
     if df is not None and speed_col is not None:
         parties_list = last_10_parties.index.tolist()
         
-        speed_configs = {
-            188: {'name': '18,8 м/мин', 'color': '#06b6d4', 'symbol': 'circle'},
-            164: {'name': '16,4 м/мин', 'color': '#f59e0b', 'symbol': 'square'},
-            203: {'name': '20,3 м/мин', 'color': '#a78bfa', 'symbol': 'diamond'},
-        }
-        
+        # Цвет и маркер — по порядку скоростей; подпись — «12,5 м/мин»
+        speed_styles = [('#06b6d4', 'circle'), ('#f59e0b', 'square'), ('#a78bfa', 'diamond'), ('#22c55e', 'triangle-up')]
+
         speed_values = sorted(df[speed_col].dropna().unique())
-        
-        for speed_val in speed_values:
+
+        for i, speed_val in enumerate(speed_values):
             speed_data = df[(df['№ партии'].isin(parties_list)) & (df[speed_col] == speed_val)]
             if len(speed_data) == 0:
                 continue
-            
+
             grouped = speed_data.groupby('№ партии')['Относительная разрывная нагрузка, сН/текс'].mean()
-            
+
             x_s = np.array(grouped.index)
             y_s = grouped.values
             x_s_display = x_s - party_offset
-            
-            config = speed_configs.get(int(speed_val), {'name': f'{speed_val}', 'color': '#94a3b8', 'symbol': 'circle'})
+
+            color, symbol = speed_styles[i % len(speed_styles)]
+            config = {'name': f"{speed_val:.1f} м/мин".replace('.', ','), 'color': color, 'symbol': symbol}
             mean_val = np.mean(y_s)
-            
+
+            # Пропущенные партии — разрыв линии, а не прямая через пропуск
+            full = grouped.reindex(parties_list)
+            x_line = np.array(full.index) - party_offset
+            y_line = [None if pd.isna(v) else v for v in full.values]
+
             # Основная линия с точками и значениями
             fig.add_trace(go.Scatter(
-                x=x_s_display,
-                y=y_s,
+                x=x_line,
+                y=y_line,
                 name=config['name'],
+                connectgaps=False,
                 line=dict(color=config['color'], width=3),
                 mode='lines+markers+text',
                 marker=dict(size=10, color=config['color'], symbol=config['symbol'],
                     line=dict(color=COLORS['background'], width=2)),
-                text=[f"{v:.1f}" for v in y_s],
+                text=['' if v is None else f"{v:.1f}" for v in y_line],
                 textposition='top center',
                 textfont=dict(size=10, color=config['color']),
                 hovertemplate=f"<b>{config['name']}</b><br>Партия %{{x}}<br>Нагрузка: %{{y:.1f}}<extra></extra>"
@@ -182,60 +187,61 @@ def create_trend_chart(last_10_parties, df=None, speed_col=None, strength_min=No
 
 
 def create_problem_machines_chart(df, last_n_parties=10, strength_min=None):
-    """Топ проблемных машин - простой горизонтальный bar chart"""
-    
+    """Топ проблемных машин: столбец делится на прочность ниже нормы и CV выше нормы"""
+
     recent_parties = sorted(df['№ партии'].dropna().unique())[-last_n_parties:]
     recent_data = df[df['№ партии'].isin(recent_parties)]
-    
-    machines = recent_data['№ ПМ'].dropna().unique()
+
+    _s_min = strength_min if strength_min is not None else QUALITY_THRESHOLDS['strength_min']
+    _cv_max = QUALITY_THRESHOLDS['cv_max']
     problems = []
-    
-    for machine in machines:
+
+    for machine in recent_data['№ ПМ'].dropna().unique():
         machine_data = recent_data[recent_data['№ ПМ'] == machine]
-        
-        _s_min = strength_min if strength_min is not None else QUALITY_THRESHOLDS['strength_min']
-        low_strength = (machine_data['Относительная разрывная нагрузка, сН/текс'] < _s_min).sum()
-        high_cv = (machine_data['Коэффициент вариации, %'] > QUALITY_THRESHOLDS['cv_max']).sum()
-        
-        total = low_strength + high_cv
-        
-        if total > 0:
-            problems.append({
-                'machine': f"М{int(machine)}",
-                'total': total
-            })
-    
+        low_strength = int((machine_data['Относительная разрывная нагрузка, сН/текс'] < _s_min).sum())
+        high_cv = int((machine_data['Коэффициент вариации, %'] > _cv_max).sum())
+        if low_strength + high_cv > 0:
+            problems.append({'machine': f"ПМ {int(machine)}", 'low_strength': low_strength,
+                             'high_cv': high_cv, 'total': low_strength + high_cv})
+
     problems = sorted(problems, key=lambda x: x['total'], reverse=True)[:10]
-    
+
     if not problems:
         fig = go.Figure()
         fig.add_annotation(x=0.5, y=0.5, text="Все машины в норме",
             font=dict(size=18, color=COLORS['success']), showarrow=False, xref="paper", yref="paper")
         fig.update_layout(height=450, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
         return fig
-    
+
     machines_list = [p['machine'] for p in problems]
-    values = [p['total'] for p in problems]
-    colors = [COLORS['danger'] if v >= 4 else COLORS['warning'] if v >= 2 else COLORS['accent'] for v in values]
-    
+
     fig = go.Figure()
     fig.add_trace(go.Bar(
-        y=machines_list, x=values, orientation='h', marker_color=colors,
-        text=values, textposition='outside', textfont=dict(color=COLORS['text'], size=12),
-        hovertemplate="<b>%{y}</b><br>Отклонений: %{x}<extra></extra>"
+        y=machines_list, x=[p['low_strength'] for p in problems], orientation='h',
+        name=f'Прочность ниже {_s_min}', marker_color=COLORS['danger'],
+        hovertemplate="<b>%{y}</b><br>Прочность ниже нормы: %{x}<extra></extra>"
     ))
-    
+    fig.add_trace(go.Bar(
+        y=machines_list, x=[p['high_cv'] for p in problems], orientation='h',
+        name=f'Коэф. вариации выше {_cv_max:g}%', marker_color=COLORS['warning'],
+        text=[p['total'] for p in problems], textposition='outside',
+        textfont=dict(color=COLORS['text'], size=12),
+        hovertemplate="<b>%{y}</b><br>Коэф. вариации выше нормы: %{x}<extra></extra>"
+    ))
+
     fig.update_layout(
+        barmode='stack',
         title=dict(text='Проблемные машины', font=dict(size=16, color=COLORS['text']), x=0.5, xanchor='center'),
-        xaxis=dict(title='Отклонений', title_font=dict(size=11, color=COLORS['text_secondary']),
+        xaxis=dict(title='Отклонений за последние партии', title_font=dict(size=11, color=COLORS['text_secondary']),
             tickfont=dict(color=COLORS['text_secondary'], size=10), gridcolor=COLORS['grid'], showgrid=True),
         yaxis=dict(tickfont=dict(color=COLORS['text'], size=11), autorange='reversed'),
         height=450, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        margin=dict(t=50, b=50, l=50, r=30), showlegend=False
+        margin=dict(t=70, b=50, l=60, r=40), showlegend=True,
+        legend=dict(orientation='h', yanchor='bottom', y=1.0, xanchor='center', x=0.5,
+            font=dict(color=COLORS['text'], size=11), bgcolor='rgba(0,0,0,0)')
     )
-    
-    return fig
 
+    return fig
 
 
 def create_quality_scatter(df, party_number=None, strength_min=None, party_offset=TWIST100_PARTY_OFFSET):

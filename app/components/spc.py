@@ -276,15 +276,15 @@ def create_control_chart(data_x, data_y, cl, ucl, lcl, title, y_title,
     ))
 
     fig.add_hline(y=cl, line=dict(color='#22c55e', width=2),
-                  annotation_text=f"CL = {cl:.2f}", annotation_position="right",
+                  annotation_text=f"Средний уровень {cl:.2f}", annotation_position="right",
                   annotation_font=dict(color='#22c55e', size=11))
 
     fig.add_hline(y=ucl, line=dict(color='#ef4444', width=2, dash='dash'),
-                  annotation_text=f"UCL = {ucl:.2f}", annotation_position="right",
+                  annotation_text=f"Верх. граница {ucl:.2f}", annotation_position="right",
                   annotation_font=dict(color='#ef4444', size=11))
 
     fig.add_hline(y=lcl, line=dict(color='#ef4444', width=2, dash='dash'),
-                  annotation_text=f"LCL = {lcl:.2f}", annotation_position="right",
+                  annotation_text=f"Ниж. граница {lcl:.2f}", annotation_position="right",
                   annotation_font=dict(color='#ef4444', size=11))
 
     if zone_lines and sigma and sigma > 0:
@@ -293,8 +293,8 @@ def create_control_chart(data_x, data_y, cl, ucl, lcl, title, y_title,
 
     if spec_limit is not None:
         fig.add_hline(y=spec_limit, line=dict(color='#a78bfa', width=2, dash='dashdot'),
-                      annotation_text=spec_label or f"Spec = {spec_limit}",
-                      annotation_position="left",
+                      annotation_text=spec_label or f"Допуск {spec_limit}",
+                      annotation_position="bottom left",
                       annotation_font=dict(color='#a78bfa', size=11))
 
     if signals:
@@ -327,7 +327,7 @@ def create_control_chart(data_x, data_y, cl, ucl, lcl, title, y_title,
                    gridcolor=COLORS['grid'], showgrid=True, range=[y_min, y_max]),
         height=420, hovermode='x unified',
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(t=60, b=50, l=60, r=120), showlegend=False,
+        margin=dict(t=60, b=50, l=60, r=150), showlegend=False,
         font=dict(family=CHART_CONFIG['font_family'])
     )
     return fig
@@ -355,15 +355,15 @@ def create_p_chart(data, title):
     ))
 
     fig.add_hline(y=data['p_bar'] * 100, line=dict(color='#22c55e', width=2),
-                  annotation_text=f"CL = {data['p_bar']*100:.1f}%", annotation_position="right",
+                  annotation_text=f"Средний уровень {data['p_bar']*100:.1f}%", annotation_position="right",
                   annotation_font=dict(color='#22c55e', size=11))
 
     fig.add_trace(go.Scatter(
-        x=x, y=data['ucl'] * 100, mode='lines', name='UCL',
+        x=x, y=data['ucl'] * 100, mode='lines', name='Верх. граница',
         line=dict(color='#ef4444', width=1.5, dash='dash'), hoverinfo='skip'
     ))
     fig.add_trace(go.Scatter(
-        x=x, y=data['lcl'] * 100, mode='lines', name='LCL',
+        x=x, y=data['lcl'] * 100, mode='lines', name='Ниж. граница',
         line=dict(color='#ef4444', width=1.5, dash='dash'),
         fill='tonexty', fillcolor='rgba(16, 185, 129, 0.05)', hoverinfo='skip'
     ))
@@ -388,7 +388,7 @@ def create_p_chart(data, title):
                    tickfont=dict(color=COLORS['text_secondary']),
                    gridcolor=COLORS['grid'], showgrid=True),
         height=420, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(t=60, b=50, l=60, r=120), showlegend=False,
+        margin=dict(t=60, b=50, l=60, r=150), showlegend=False,
         font=dict(family=CHART_CONFIG['font_family'])
     )
     return fig, signals

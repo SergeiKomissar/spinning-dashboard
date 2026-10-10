@@ -174,14 +174,14 @@ def main():
                       annotation_text=f"Критично: {DEV_ALERT}", annotation_position="bottom right",
                       annotation_font=dict(color=COLORS['danger'], size=11))
         fig.update_layout(
-            title=dict(text='<b>Отклонение прочности от среднего партии</b>',
+            title=dict(text='<b>Отклонение прочности<br>от среднего партии</b>',
                        font=dict(size=15, color=COLORS['text']), x=0.5),
             height=400, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
             font=dict(color=COLORS['text']),
             xaxis=dict(title='Аппарат ВТВ', tickfont=dict(color=COLORS['text_secondary']), showgrid=False),
             yaxis=dict(title='сН/текс', tickfont=dict(color=COLORS['text_secondary']),
                        gridcolor=COLORS['grid'], zeroline=False),
-            showlegend=False, margin=dict(t=50, b=40, l=50, r=20),
+            showlegend=False, margin=dict(t=70, b=40, l=50, r=20),
         )
         st.plotly_chart(fig, width='stretch', config={'displayModeBar': False}, key='vtv_rating_dev')
 
@@ -201,14 +201,14 @@ def main():
                       annotation_text=f"Среднее: {avg_fail:.1f}%", annotation_position="top right",
                       annotation_font=dict(color=COLORS['text_secondary'], size=11))
         fig.update_layout(
-            title=dict(text=f"<b>Доля результатов ниже {QUALITY_THRESHOLDS['strength_min']} сН/текс</b>",
+            title=dict(text=f"<b>Доля результатов<br>ниже {QUALITY_THRESHOLDS['strength_min']} сН/текс</b>",
                        font=dict(size=15, color=COLORS['text']), x=0.5),
             height=400, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
             font=dict(color=COLORS['text']),
             xaxis=dict(title='Аппарат ВТВ', tickfont=dict(color=COLORS['text_secondary']), showgrid=False),
             yaxis=dict(title='% ниже нормы', tickfont=dict(color=COLORS['text_secondary']),
                        gridcolor=COLORS['grid'], rangemode='tozero'),
-            showlegend=False, margin=dict(t=50, b=40, l=50, r=20),
+            showlegend=False, margin=dict(t=70, b=40, l=50, r=20),
         )
         st.plotly_chart(fig, width='stretch', config={'displayModeBar': False}, key='vtv_rating_fail')
 
