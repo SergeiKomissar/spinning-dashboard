@@ -1,12 +1,15 @@
-import os
 import pandas as pd
-import gspread
-from google.oauth2.service_account import Credentials
 import streamlit as st
 import socket
 import time
 
-from utils.constants import DEFAULT_SHEET_ID
+from utils.google_sheets import open_spreadsheet
+
+# Варианты названий колонок в таблице → каноническое имя
+COLUMN_ALIASES = {
+    'Номер ПМ': '№ ПМ',
+}
+
 
 @st.cache_data(ttl=300, show_spinner=False)
 def load_data():
@@ -14,123 +17,22 @@ def load_data():
     max_retries = 3
     retry_delay = 2
 
-    sheet_id = os.getenv('GOOGLE_SHEET_ID', DEFAULT_SHEET_ID)
-    
     for attempt in range(max_retries):
         try:
-            # Настройка доступа к Google Sheets
-            scope = ['https://spreadsheets.google.com/feeds',
-                    'https://www.googleapis.com/auth/drive']
-            
-            # Пробуем использовать Streamlit Secrets (для Streamlit Cloud)
-            if "gcp_service_account" in st.secrets:
-                credentials = Credentials.from_service_account_info(
-                    st.secrets["gcp_service_account"],
-                    scopes=scope
-                )
-            else:
-                # Fallback на файл credentials.json (для локального запуска)
-                from oauth2client.service_account import ServiceAccountCredentials
-                credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-                if not credentials_path:
-                    local_path = os.path.join(os.path.dirname(__file__), '..', 'credentials.json')
-                    root_path = os.path.join(os.path.dirname(__file__), '..', '..', 'credentials.json')
-                    if os.path.exists(local_path):
-                        credentials_path = local_path
-                    elif os.path.exists(root_path):
-                        credentials_path = root_path
-                    else:
-                        st.error("Не найден файл credentials.json")
-                        return None
-                credentials = ServiceAccountCredentials.from_json_keyfile_name(
-                    credentials_path,
-                    scope
-                )
-            
             # Увеличиваем таймаут подключения
             socket.setdefaulttimeout(20)
-            
-            client = gspread.authorize(credentials)
-            sheet = client.open_by_key(sheet_id).sheet1
-            
+            try:
+                spreadsheet = open_spreadsheet()
+            except FileNotFoundError as e:
+                st.error(str(e))
+                return None
+            sheet = spreadsheet.sheet1
+
             # Получаем данные через get_all_values (надёжнее get_all_records для больших таблиц)
             # UNFORMATTED_VALUE — сырые числа без разделителей тысяч (проблема с партиями >999)
             all_values = sheet.get_all_values(value_render_option='UNFORMATTED_VALUE')
-            if len(all_values) < 2:
-                st.error("Таблица пуста")
-                return None
-            headers = all_values[0]
-            rows = all_values[1:]
-            df = pd.DataFrame(rows, columns=headers)
-            
-            # Убираем полностью пустые строки
-            df = df.replace('', pd.NA).dropna(how='all')
-            
-            # Проверяем, что таблица не пуста
-            if len(df.columns) == 0:
-                st.error("Таблица пуста или не содержит данных")
-                return None
-            
-            # Обработка данных - исправляем возможные проблемы с названиями колонок
-            columns_list = df.columns.tolist()
-            rename_dict = {}
-            
-            for col in columns_list:
-                if col.strip() == 'Линейная плотность, текс ':
-                    rename_dict[col] = 'Линейная плотность, текс'
-                elif col.strip() == 'Номер ПМ':
-                    rename_dict[col] = '№ ПМ'
-                elif col.strip() == '№ ПМ ':
-                    rename_dict[col] = '№ ПМ'
-                elif col.strip() == '№ ПМ':
-                    rename_dict[col] = '№ ПМ'
-            
-            if rename_dict:
-                df = df.rename(columns=rename_dict)
-            
-            if 'Номер ПМ' in df.columns and '№ ПМ' not in df.columns:
-                df.columns = [col if col != 'Номер ПМ' else '№ ПМ' for col in df.columns]
-            
-            required_columns = ['№ партии', '№ ПМ', 'Относительная разрывная нагрузка, сН/текс']
-            missing_columns = [col for col in required_columns if col not in df.columns]
-            
-            if missing_columns:
-                st.error(f"Отсутствуют обязательные колонки: {', '.join(missing_columns)}")
-                st.warning(f"Доступные колонки в таблице: {', '.join(df.columns.tolist())}")
-                return None
-            
-            # Находим колонку скорости
-            speed_col = None
-            for c in df.columns:
-                if 'Скорость' in c and 'формования' in c:
-                    speed_col = c
-                    break
-            
-            numeric_columns = ['№ партии', '№ ПМ', 'Относительная разрывная нагрузка, сН/текс', 'Крутка']
-            if speed_col:
-                numeric_columns.append(speed_col)
-            
-            for col in numeric_columns:
-                if col in df.columns:
-                    # Заменяем запятые на точки перед конвертацией
-                    df[col] = df[col].astype(str).str.replace(',', '.', regex=False)
-                    df[col] = pd.to_numeric(df[col], errors='coerce')
-            
-            if 'Линейная плотность, текс' in df.columns:
-                df['Линейная плотность, текс'] = pd.to_numeric(df['Линейная плотность, текс'], errors='coerce')
-                # Если значения > 100 — данные пришли как целые (287 вместо 28.7), делим на 10
-                if df['Линейная плотность, текс'].median() > 100:
-                    df['Линейная плотность, текс'] = df['Линейная плотность, текс'] / 10
-            if 'Коэффициент вариации, %' in df.columns:
-                df['Коэффициент вариации, %'] = pd.to_numeric(df['Коэффициент вариации, %'], errors='coerce')
-                # Если значения > 50 — данные пришли как целые (76 вместо 7.6), делим на 10
-                if df['Коэффициент вариации, %'].median() > 50:
-                    df['Коэффициент вариации, %'] = df['Коэффициент вариации, %'] / 10
+            return prepare_dataframe(all_values)
 
-            df = df.dropna(subset=required_columns)
-            
-            return df
-            
         except (socket.gaierror, socket.timeout) as e:
             if attempt < max_retries - 1:
                 time.sleep(retry_delay)
@@ -141,3 +43,65 @@ def load_data():
         except Exception as e:
             st.error(f"Ошибка при загрузке данных: {str(e)}")
             return None
+
+
+def prepare_dataframe(all_values):
+    """Таблица из get_all_values → DataFrame: имена колонок, числа, масштаб.
+    При проблеме с форматом показывает ошибку и возвращает None."""
+    if len(all_values) < 2:
+        st.error("Таблица пуста")
+        return None
+    headers = all_values[0]
+    rows = all_values[1:]
+    df = pd.DataFrame(rows, columns=headers)
+
+    # Убираем полностью пустые строки
+    df = df.replace('', pd.NA).dropna(how='all')
+
+    # Проверяем, что таблица не пуста
+    if len(df.columns) == 0:
+        st.error("Таблица пуста или не содержит данных")
+        return None
+
+    # Названия колонок в таблице бывают с лишними пробелами или в старом варианте
+    df = df.rename(columns=lambda col: COLUMN_ALIASES.get(col.strip(), col.strip()))
+
+    required_columns = ['№ партии', '№ ПМ', 'Относительная разрывная нагрузка, сН/текс']
+    missing_columns = [col for col in required_columns if col not in df.columns]
+
+    if missing_columns:
+        st.error(f"Отсутствуют обязательные колонки: {', '.join(missing_columns)}")
+        st.warning(f"Доступные колонки в таблице: {', '.join(df.columns.tolist())}")
+        return None
+
+    # Находим колонку скорости
+    speed_col = None
+    for c in df.columns:
+        if 'Скорость' in c and 'формования' in c:
+            speed_col = c
+            break
+
+    numeric_columns = ['№ партии', '№ ПМ', 'Относительная разрывная нагрузка, сН/текс', 'Крутка']
+    if speed_col:
+        numeric_columns.append(speed_col)
+
+    for col in numeric_columns:
+        if col in df.columns:
+            # Заменяем запятые на точки перед конвертацией
+            df[col] = df[col].astype(str).str.replace(',', '.', regex=False)
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+
+    if 'Линейная плотность, текс' in df.columns:
+        df['Линейная плотность, текс'] = pd.to_numeric(df['Линейная плотность, текс'], errors='coerce')
+        # Если значения > 100 — данные пришли как целые (287 вместо 28.7), делим на 10
+        if df['Линейная плотность, текс'].median() > 100:
+            df['Линейная плотность, текс'] = df['Линейная плотность, текс'] / 10
+    if 'Коэффициент вариации, %' in df.columns:
+        df['Коэффициент вариации, %'] = pd.to_numeric(df['Коэффициент вариации, %'], errors='coerce')
+        # Если значения > 50 — данные пришли как целые (76 вместо 7.6), делим на 10
+        if df['Коэффициент вариации, %'].median() > 50:
+            df['Коэффициент вариации, %'] = df['Коэффициент вариации, %'] / 10
+
+    df = df.dropna(subset=required_columns)
+
+    return df

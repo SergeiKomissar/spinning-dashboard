@@ -89,29 +89,8 @@ def _load_blocks_from_sheet():
 
     @st.cache_data(ttl=600, show_spinner=False)
     def _cached():
-        import os
-        import gspread
-        from utils.constants import DEFAULT_SHEET_ID
-        scope = ['https://spreadsheets.google.com/feeds',
-                 'https://www.googleapis.com/auth/drive']
-        if "gcp_service_account" in st.secrets:
-            from google.oauth2.service_account import Credentials
-            credentials = Credentials.from_service_account_info(
-                st.secrets["gcp_service_account"], scopes=scope)
-        else:
-            from oauth2client.service_account import ServiceAccountCredentials
-            credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-            if not credentials_path:
-                base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                for cand in (os.path.join(base, 'credentials.json'),
-                             os.path.join(os.path.dirname(base), 'credentials.json')):
-                    if os.path.exists(cand):
-                        credentials_path = cand
-                        break
-            credentials = ServiceAccountCredentials.from_json_keyfile_name(credentials_path, scope)
-        client = gspread.authorize(credentials)
-        sheet_id = os.getenv('GOOGLE_SHEET_ID', DEFAULT_SHEET_ID)
-        ws = client.open_by_key(sheet_id).worksheet(SHEET_NAME)
+        from utils.google_sheets import open_spreadsheet
+        ws = open_spreadsheet().worksheet(SHEET_NAME)
         rows = ws.get_all_values()
         blocks = {}
         for row in rows[1:]:
