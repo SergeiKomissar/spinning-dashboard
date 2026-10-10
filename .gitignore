@@ -5,3 +5,7 @@ venv/
 .DS_Store
 credentials.json
 app/credentials.json
+.pytest_cache/
+# Эталонные снимки и выгрузка реальных данных — только локально
+tests/.snapshot/
+data/summaries.db
