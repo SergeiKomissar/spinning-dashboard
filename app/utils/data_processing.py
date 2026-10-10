@@ -2,6 +2,7 @@ import pandas as pd
 import streamlit as st
 import socket
 import time
+from datetime import datetime
 
 from utils.google_sheets import open_spreadsheet
 
@@ -31,7 +32,11 @@ def load_data():
             # Получаем данные через get_all_values (надёжнее get_all_records для больших таблиц)
             # UNFORMATTED_VALUE — сырые числа без разделителей тысяч (проблема с партиями >999)
             all_values = sheet.get_all_values(value_render_option='UNFORMATTED_VALUE')
-            return prepare_dataframe(all_values)
+            df = prepare_dataframe(all_values)
+            if df is not None:
+                # Время выгрузки из таблицы (сохраняется в кэше вместе с данными)
+                df.attrs['loaded_at'] = datetime.now()
+            return df
 
         except (socket.gaierror, socket.timeout) as e:
             if attempt < max_retries - 1:

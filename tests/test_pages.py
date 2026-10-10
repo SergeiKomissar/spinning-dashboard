@@ -65,3 +65,17 @@ def test_refresh_button_reloads_data(page):
         btn.click().run()
         assert len(calls) == 2
         assert not at.exception
+
+
+def test_top_bar_shows_data_load_time_not_current_time(results):
+    tree = results[os.path.basename(PAGES[0])]['default']
+    bodies = ' '.join(e['p'].get('body', '') for e in tree if e['t'] == 'Markdown')
+    # FakeLoad проставляет loaded_at = 01.01.2026 12:00; снимок заменяет даты на <TS>
+    assert 'Данные загружены: <TS>' in bodies
+    assert 'Обновлено:' not in bodies
+
+
+def test_main_dashboard_builds_charts_only_for_selected_machine(results):
+    tree = results[os.path.basename(PAGES[0])]['default']
+    assert not [e for e in tree if e['t'] == 'Expander']
+    assert sum(1 for e in tree if e['t'] == 'UnknownElement') <= 6

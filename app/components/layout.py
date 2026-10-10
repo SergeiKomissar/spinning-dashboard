@@ -1,7 +1,6 @@
 import streamlit as st
 import sys
 import os
-from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.constants import COLORS, TWIST100_PARTY_OFFSET
@@ -43,12 +42,16 @@ def render_sidebar_nav():
 
 
 def render_top_bar(refresh_key):
-    """Компактная шапка: пользователь, время, кнопки «Обновить» и «Выход»."""
+    """Компактная шапка: пользователь, время загрузки данных, кнопки «Обновить» и «Выход»."""
+    _ensure_session_df()
     header_cols = st.columns([3, 2, 1, 1])
     with header_cols[0]:
         st.markdown(f"<span style='color:#94a3b8;font-size:13px;'>Пользователь: <b>{st.session_state.user_info['name']}</b></span>", unsafe_allow_html=True)
     with header_cols[1]:
-        st.markdown(f"<span style='color:#64748b;font-size:12px;'>Обновлено: {datetime.now().strftime('%d.%m.%Y %H:%M')}</span>", unsafe_allow_html=True)
+        df = st.session_state.get('df')
+        loaded_at = df.attrs.get('loaded_at') if df is not None else None
+        loaded_text = loaded_at.strftime('%d.%m.%Y %H:%M') if loaded_at else '—'
+        st.markdown(f"<span style='color:#64748b;font-size:12px;'>Данные загружены: {loaded_text}</span>", unsafe_allow_html=True)
     with header_cols[2]:
         if st.button('Обновить', key=refresh_key):
             with st.spinner('Обновление...'):
@@ -63,13 +66,17 @@ def render_top_bar(refresh_key):
         logout_button()
 
 
+def _ensure_session_df():
+    if 'df' not in st.session_state:
+        with st.spinner('Загрузка данных...'):
+            st.session_state.df = data_processing.load_data()
+
+
 def get_session_df():
     """Данные из Google Sheets: загружаются один раз за сессию, дальше —
     копия из session_state (обновление — кнопкой «Обновить»)."""
-    with st.spinner('Загрузка данных...'):
-        if 'df' not in st.session_state:
-            st.session_state.df = data_processing.load_data()
-        return st.session_state.df.copy() if st.session_state.df is not None else None
+    _ensure_session_df()
+    return st.session_state.df.copy() if st.session_state.df is not None else None
 
 def inject_custom_css():
     """Внедрение кастомных CSS стилей для корпоративной тёмной темы"""

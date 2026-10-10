@@ -19,6 +19,7 @@ import os
 import re
 import sys
 import tempfile
+from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
@@ -55,7 +56,9 @@ class FakeLoad:
         self.df = df
 
     def __call__(self):
-        return self.df.copy()
+        df = self.df.copy()
+        df.attrs['loaded_at'] = datetime(2026, 1, 1, 12, 0)
+        return df
 
     def clear(self):
         pass
