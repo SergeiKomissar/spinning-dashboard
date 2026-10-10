@@ -106,7 +106,7 @@ def main():
 
     st.dataframe(
         table,
-        use_container_width=True,
+        width='stretch',
         hide_index=True,
         height=min(38 * len(table) + 40, 700),
         column_config={
@@ -171,7 +171,7 @@ def main():
             yaxis=dict(title='сН/текс', tickfont=dict(color=COLORS['text_secondary']), gridcolor=COLORS['grid']),
             legend=dict(orientation='h', y=1.12, x=0, font=dict(size=10, color=COLORS['text_secondary'])),
             margin=dict(t=60, b=40, l=50, r=20))
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False}, key='mh_strength')
+        st.plotly_chart(fig, width='stretch', config={'displayModeBar': False}, key='mh_strength')
 
     with chart_cols[1]:
         fig = go.Figure()
@@ -189,7 +189,7 @@ def main():
             xaxis=dict(title='Партия', tickfont=dict(color=COLORS['text_secondary']), gridcolor=COLORS['grid']),
             yaxis=dict(title='сН/текс', tickfont=dict(color=COLORS['text_secondary']), gridcolor=COLORS['grid'], zeroline=False),
             margin=dict(t=60, b=40, l=50, r=20))
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False}, key='mh_dev')
+        st.plotly_chart(fig, width='stretch', config={'displayModeBar': False}, key='mh_dev')
 
     chart_cols2 = st.columns(2)
     with chart_cols2[0]:
@@ -209,7 +209,7 @@ def main():
             xaxis=dict(title='Партия', tickfont=dict(color=COLORS['text_secondary']), gridcolor=COLORS['grid']),
             yaxis=dict(title='CV, %', tickfont=dict(color=COLORS['text_secondary']), gridcolor=COLORS['grid'], rangemode='tozero'),
             margin=dict(t=60, b=40, l=50, r=20))
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False}, key='mh_cv')
+        st.plotly_chart(fig, width='stretch', config={'displayModeBar': False}, key='mh_cv')
 
     with chart_cols2[1]:
         # Разрез по аппаратам ВТВ для этой машины
@@ -237,7 +237,7 @@ def main():
                     yaxis=dict(title='сН/текс', tickfont=dict(color=COLORS['text_secondary']), gridcolor=COLORS['grid'],
                                range=[min(g['mean'].min() - 5, thr - 8), g['mean'].max() + 8]),
                     margin=dict(t=60, b=40, l=50, r=20))
-                st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False}, key='mh_vtv')
+                st.plotly_chart(fig, width='stretch', config={'displayModeBar': False}, key='mh_vtv')
                 st.markdown(f"<span style='color:{COLORS['text_secondary']};font-size:12px;'>Если у машины проседает только один аппарат — причина в аппарате, а не в машине.</span>", unsafe_allow_html=True)
             else:
                 st.info("Недостаточно данных по аппаратам ВТВ для этой машины")

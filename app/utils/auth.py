@@ -196,7 +196,7 @@ def login_form():
         username = st.text_input("Логин", placeholder="Введите логин")
         password = st.text_input("Пароль", type="password", placeholder="Введите пароль")
         
-        if st.button("Войти", use_container_width=True):
+        if st.button("Войти", width='stretch'):
             if verify_password(username, password):
                 user_info = get_user_info(username)
                 st.session_state.authenticated = True

@@ -101,7 +101,7 @@ def main():
             spec_label=f"Мин. допуск: {QUALITY_THRESHOLDS['strength_min']}",
             sigma=xbar_r_data['sigma_x']
         )
-        st.plotly_chart(fig_xbar, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(fig_xbar, width='stretch', config={'displayModeBar': False})
 
         signals_r = detect_out_of_control(
             xbar_r_data['ranges'], xbar_r_data['r_bar'],
@@ -115,7 +115,7 @@ def main():
             title='R-карта: Размах разрывной нагрузки в партии',
             y_title='Размах, сН/текс', signals=signals_r, zone_lines=False
         )
-        st.plotly_chart(fig_r, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(fig_r, width='stretch', config={'displayModeBar': False})
 
         with st.expander("Параметры расчёта X\u0304-R карты"):
             param_cols = st.columns(4)
@@ -161,7 +161,7 @@ def main():
             spec_label=f"Макс. допуск: {QUALITY_THRESHOLDS['cv_max']}%",
             sigma=xbar_s_data['sigma_x']
         )
-        st.plotly_chart(fig_xbar_cv, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(fig_xbar_cv, width='stretch', config={'displayModeBar': False})
 
         signals_s = detect_out_of_control(
             xbar_s_data['stds'], xbar_s_data['s_bar'],
@@ -175,7 +175,7 @@ def main():
             title='S-карта: Стандартное отклонение CV в партии',
             y_title='Стд. отклонение CV, %', signals=signals_s, zone_lines=False
         )
-        st.plotly_chart(fig_s, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(fig_s, width='stretch', config={'displayModeBar': False})
 
         with st.expander("Параметры расчёта X\u0304-S карты"):
             param_cols = st.columns(4)
@@ -220,7 +220,7 @@ def main():
                 f'p-карта: прочность < {QUALITY_THRESHOLDS["strength_min"]}'
             )
             render_spc_summary(p_data_strength, sig_p_str, "Доля слабых")
-            st.plotly_chart(fig_p_str, use_container_width=True, config={'displayModeBar': False})
+            st.plotly_chart(fig_p_str, width='stretch', config={'displayModeBar': False})
 
     with p_chart_col2:
         p_data_cv = calc_p_chart_data(
@@ -234,7 +234,7 @@ def main():
                 f'p-карта: CV > {QUALITY_THRESHOLDS["cv_max"]}%'
             )
             render_spc_summary(p_data_cv, sig_p_cv, "Доля нестабильных")
-            st.plotly_chart(fig_p_cv, use_container_width=True, config={'displayModeBar': False})
+            st.plotly_chart(fig_p_cv, width='stretch', config={'displayModeBar': False})
 
     st.markdown("<div style='height:32px'></div>", unsafe_allow_html=True)
 
@@ -290,7 +290,7 @@ def main():
                     y_title=xmr_metric.split(',')[0], signals=signals_xmr,
                     spec_limit=spec, spec_label=spec_lbl, sigma=xmr_data['sigma_est']
                 )
-                st.plotly_chart(fig_x, use_container_width=True, config={'displayModeBar': False})
+                st.plotly_chart(fig_x, width='stretch', config={'displayModeBar': False})
 
             with xmr_cols[1]:
                 signals_mr = detect_out_of_control(
@@ -303,7 +303,7 @@ def main():
                     title=f'MR-карта: ПМ {int(selected_machine)}',
                     y_title='Скользящий размах', signals=signals_mr, zone_lines=False
                 )
-                st.plotly_chart(fig_mr, use_container_width=True, config={'displayModeBar': False})
+                st.plotly_chart(fig_mr, width='stretch', config={'displayModeBar': False})
 
             with st.expander(f"Параметры X-MR карты для ПМ {int(selected_machine)}"):
                 param_cols = st.columns(3)
@@ -378,7 +378,7 @@ def main():
                         sigma=sigma_est
                     )
                     fig_vx.add_hline(y=0, line=dict(color=COLORS['text_secondary'], width=1, dash='dot'))
-                    st.plotly_chart(fig_vx, use_container_width=True, config={'displayModeBar': False}, key='spc_vtv_x')
+                    st.plotly_chart(fig_vx, width='stretch', config={'displayModeBar': False}, key='spc_vtv_x')
 
                 with vtv_chart_cols[1]:
                     signals_vmr = detect_out_of_control(list(mr), mr_bar, mr_ucl, 0)
@@ -388,7 +388,7 @@ def main():
                         title=f'MR-карта: ВТВ №{int(selected_vtv_spc)}',
                         y_title='Скользящий размах', signals=signals_vmr, zone_lines=False
                     )
-                    st.plotly_chart(fig_vmr, use_container_width=True, config={'displayModeBar': False}, key='spc_vtv_mr')
+                    st.plotly_chart(fig_vmr, width='stretch', config={'displayModeBar': False}, key='spc_vtv_mr')
 
                 with st.expander(f"Параметры карты для ВТВ №{int(selected_vtv_spc)}"):
                     p_cols = st.columns(3)

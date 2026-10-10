@@ -61,7 +61,7 @@ def main():
         df_users = pd.DataFrame(stats['user_stats'], 
             columns=['Логин', 'Имя', 'Посещений', 'Всего минут', 'Последний визит'])
         df_users['Последний визит'] = pd.to_datetime(df_users['Последний визит']).dt.strftime('%d.%m.%Y %H:%M')
-        st.dataframe(df_users, use_container_width=True, hide_index=True)
+        st.dataframe(df_users, width='stretch', hide_index=True)
     else:
         st.info("Нет данных")
     
@@ -75,7 +75,7 @@ def main():
         df_visits['Выход'] = df_visits['Выход'].apply(
             lambda x: datetime.fromisoformat(x).strftime('%d.%m.%Y %H:%M') if x else '🟢 Онлайн'
         )
-        st.dataframe(df_visits, use_container_width=True, hide_index=True)
+        st.dataframe(df_visits, width='stretch', hide_index=True)
     else:
         st.info("Нет данных")
 

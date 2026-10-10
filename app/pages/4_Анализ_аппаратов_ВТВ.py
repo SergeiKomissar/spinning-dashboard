@@ -183,7 +183,7 @@ def main():
                        gridcolor=COLORS['grid'], zeroline=False),
             showlegend=False, margin=dict(t=50, b=40, l=50, r=20),
         )
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False}, key='vtv_rating_dev')
+        st.plotly_chart(fig, width='stretch', config={'displayModeBar': False}, key='vtv_rating_dev')
 
     with rating_cols[1]:
         d = vtv_ok.sort_values('fail_pct', ascending=False)
@@ -210,7 +210,7 @@ def main():
                        gridcolor=COLORS['grid'], rangemode='tozero'),
             showlegend=False, margin=dict(t=50, b=40, l=50, r=20),
         )
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False}, key='vtv_rating_fail')
+        st.plotly_chart(fig, width='stretch', config={'displayModeBar': False}, key='vtv_rating_fail')
 
     excluded = vtv_stats[vtv_stats['n'] < MIN_N]
     if not excluded.empty:
@@ -287,7 +287,7 @@ def main():
             legend=dict(orientation='h', y=1.08, x=0, font=dict(color=COLORS['text_secondary'], size=11)),
             margin=dict(t=70, b=40, l=50, r=20),
         )
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False}, key='vtv_trend_chart')
+        st.plotly_chart(fig, width='stretch', config={'displayModeBar': False}, key='vtv_trend_chart')
     else:
         st.warning(f"Недостаточно партий для ВТВ №{int(selected_vtv)} за выбранный период")
 
@@ -339,7 +339,7 @@ def main():
             yaxis=dict(title='', tickfont=dict(color=COLORS['text_secondary'], size=10), autorange='reversed'),
             margin=dict(t=60, b=20, l=60, r=20),
         )
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False}, key='vtv_heatmap')
+        st.plotly_chart(fig, width='stretch', config={'displayModeBar': False}, key='vtv_heatmap')
         st.markdown(f"<span style='color:{COLORS['text_secondary']};font-size:12px;'>Пустые ячейки — комбинация не встречалась или меньше 2 измерений.</span>", unsafe_allow_html=True)
     else:
         st.warning("Недостаточно данных для тепловой карты")
