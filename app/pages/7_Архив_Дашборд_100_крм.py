@@ -28,10 +28,10 @@ def main():
 
     render_page_header(subtitle='Нить с круткой 100 кр/м (архив)')
 
+    render_sidebar_nav()
     render_top_bar(refresh_key="refresh_button")
 
 
-    render_sidebar_nav()
 
 
 

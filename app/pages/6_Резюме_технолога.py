@@ -28,9 +28,9 @@ def main():
         unsafe_allow_html=True
     )
 
+    render_sidebar_nav()
     render_top_bar(refresh_key="ai_refresh")
 
-    render_sidebar_nav()
 
     df = get_session_df()
 

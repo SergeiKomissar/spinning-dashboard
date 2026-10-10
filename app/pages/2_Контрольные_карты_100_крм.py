@@ -23,7 +23,6 @@ st.set_page_config(
 
 def main():
 
-    render_sidebar_nav()
 
     if not login_form():
         return
@@ -35,6 +34,7 @@ def main():
         unsafe_allow_html=True
     )
 
+    render_sidebar_nav()
     render_top_bar(refresh_key="spc_refresh")
 
     df = get_session_df()
