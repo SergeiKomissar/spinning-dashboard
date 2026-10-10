@@ -14,13 +14,12 @@ st.set_page_config(
 )
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from components.charts import create_gauge_chart, create_trend_chart, create_heatmap, create_problem_machines_chart, create_quality_scatter, create_sparkline
-from components.metrics import calculate_party_metrics, get_status_indicator, get_quality_score
-from components.layout import render_page_header, render_party_header, render_metrics_section
+from components.charts import create_trend_chart, create_problem_machines_chart, create_quality_scatter
+from components.metrics import calculate_party_metrics
+from components.layout import render_page_header, render_metrics_section
 from utils.data_processing import load_data
-from utils.constants import QUALITY_THRESHOLDS_50 as QUALITY_THRESHOLDS, COLORS, GAUGE_CONFIG
-from utils.auth import login_form, logout_button, is_admin
-import pandas as pd
+from utils.constants import QUALITY_THRESHOLDS_50 as QUALITY_THRESHOLDS, COLORS
+from utils.auth import login_form, logout_button
 
 
 def main():

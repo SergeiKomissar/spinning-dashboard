@@ -1,9 +1,7 @@
 import streamlit as st
 import yaml
-import os
-import hashlib
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 # Путь к конфигурации
@@ -17,11 +15,6 @@ def load_users():
         with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
             return yaml.safe_load(f)
     return None
-
-
-def hash_password(password):
-    """Хеширование пароля"""
-    return hashlib.sha256(str(password).encode()).hexdigest()
 
 
 def verify_password(username, password):

@@ -42,29 +42,3 @@ QUALITY_THRESHOLDS_50 = {
 
 # Идентификатор таблицы по умолчанию
 DEFAULT_SHEET_ID = '1S1obWIvuasnedJrKNeOQvJuoT-vrZ7v6EgivXiYsotc'
-
-# Настройки gauge-индикаторов
-GAUGE_CONFIG = {
-    'strength': {
-        'min': 200,
-        'max': 350,
-        'threshold': 270,
-        'title': 'Разрывная нагрузка',
-        'unit': 'сН/текс'
-    },
-    'cv': {
-        'min': 0,
-        'max': 15,
-        'threshold': 9.0,
-        'title': 'Коэф. вариации',
-        'unit': '%',
-        'inverse': True  # Меньше = лучше
-    },
-    'density': {
-        'min': 27,
-        'max': 31,
-        'range': (28.3, 29.5),
-        'title': 'Лин. плотность',
-        'unit': 'текс'
-    }
-}

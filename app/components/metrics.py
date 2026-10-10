@@ -1,10 +1,8 @@
-import pandas as pd
 import sys
 import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils.constants import COLORS, QUALITY_THRESHOLDS, QUALITY_THRESHOLDS_50
-import streamlit as st
+from utils.constants import QUALITY_THRESHOLDS
 
 def calculate_party_metrics(party_data, thresholds=None):
     """Расчет метрик для партии"""
@@ -32,50 +30,3 @@ def calculate_party_metrics(party_data, thresholds=None):
     }
     return metrics
 
-
-def get_status_indicator(value, threshold, mode='greater'):
-    """Создание индикатора статуса с новым дизайном"""
-    if pd.isna(value):
-        return f'<span class="status-indicator" style="color: {COLORS["muted"]};">◯</span>'
-    
-    if mode == 'greater':
-        is_good = value >= threshold
-    elif mode == 'less':
-        is_good = value <= threshold
-    elif mode == 'range':
-        min_val, max_val = threshold
-        is_good = min_val <= value <= max_val
-    else:
-        is_good = True
-    
-    if is_good:
-        return f'<span style="color: {COLORS["success"]}; font-size: 20px; text-shadow: 0 0 10px {COLORS["success"]};">●</span>'
-    else:
-        return f'<span style="color: {COLORS["danger"]}; font-size: 20px; text-shadow: 0 0 10px {COLORS["danger"]};">●</span>'
-
-
-def get_quality_score(party_data):
-    """Расчёт общего индекса качества партии (0-100)"""
-    metrics = calculate_party_metrics(party_data)
-    
-    # Веса для каждого показателя
-    weights = {'strength': 0.4, 'cv': 0.35, 'density': 0.25}
-    
-    # Расчёт баллов
-    strength_score = min(100, max(0, (metrics['avg_strength'] - 200) / (350 - 200) * 100))
-    cv_score = min(100, max(0, (15 - metrics['avg_cv']) / 15 * 100))
-    
-    if metrics['avg_density'] > 0:
-        center = sum(QUALITY_THRESHOLDS['density_range']) / 2
-        deviation = abs(metrics['avg_density'] - center)
-        density_score = max(0, 100 - deviation * 50)
-    else:
-        density_score = 50
-    
-    total_score = (
-        strength_score * weights['strength'] +
-        cv_score * weights['cv'] +
-        density_score * weights['density']
-    )
-    
-    return round(total_score, 1)
