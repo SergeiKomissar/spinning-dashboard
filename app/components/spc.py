@@ -294,7 +294,7 @@ def create_control_chart(data_x, data_y, cl, ucl, lcl, title, y_title,
     if spec_limit is not None:
         fig.add_hline(y=spec_limit, line=dict(color='#a78bfa', width=2, dash='dashdot'),
                       annotation_text=spec_label or f"Допуск {spec_limit}",
-                      annotation_position="bottom left",
+                      annotation_position="top left",
                       annotation_font=dict(color='#a78bfa', size=11))
 
     if signals:

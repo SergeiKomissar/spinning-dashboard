@@ -50,7 +50,7 @@ def render_sidebar_nav():
 def render_top_bar(refresh_key):
     """Компактная шапка: пользователь, время загрузки данных, кнопки «Обновить» и «Выход»."""
     _ensure_session_df()
-    header_cols = st.columns([3, 2, 1, 1])
+    header_cols = st.columns([3, 2, 1.4, 1.1])
     with header_cols[0]:
         st.markdown(f"<span style='color:#94a3b8;font-size:13px;'>Пользователь: <b>{st.session_state.user_info['name']}</b></span>", unsafe_allow_html=True)
     with header_cols[1]:
@@ -153,7 +153,7 @@ def inject_custom_css():
             color: {COLORS['text']};
             border: 1px solid {COLORS['grid']};
             border-radius: 6px;
-            padding: 10px 20px;
+            padding: 8px 14px;
             font-weight: 500;
             font-size: 14px;
             transition: all 0.2s ease;
